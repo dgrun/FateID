@@ -23,7 +23,9 @@ install.packages("FateID-master",repos = NULL, type="source")
 Alternatively, install in R directly from github using devtools:
 
 install.packages("devtools")
+
 library(devtools)
+
 install_github("dgrun/FateID")
 
 
