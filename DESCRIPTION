@@ -1,0 +1,27 @@
+Package: FateID
+Title: Computation and visualization of cell fate bias for multi-lineage single cell transcriptome data
+Version: 0.0.0.9000
+Date: 03/10/2017
+Authors@R: person("Dominic", "Gruen", email = "dominic.gruen@gmail.com", role = c("aut", "cre"))
+Description: Computation and visualization of cell fate bias for multi-lineage single cell transcriptome data
+Depends: R (>= 3.3.2)
+Imports:
+  caTools,
+  DDRTree,
+  DESeq2,
+  destiny,
+  lle,
+  pheatmap,
+  princurve,
+  randomForest,
+  RColorBrewer,
+  rgl,
+  Rtsne,
+  som	
+Remotes: bioc::3.4/DESeq2, bioc::3.4/destiny
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
+
+
