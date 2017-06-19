@@ -7,15 +7,15 @@ FateID is available as an R package.
 
 After downloading and unzipping
 
-unzip FateID.zip 
+unzip FateID-master.zip 
 
 it can be installed from the command line by
 
-R CMD INSTALL FateID
+R CMD INSTALL FateID-master
 
 or directly in R from source by
 
-install.packages("FateID", repos = NULL, type="source")
+install.packages("FateID-master",repos = NULL, type="source")
 
 (if R is started from the directory where FateID.zip has been downloaded to; otherwise specify the full path)
 
