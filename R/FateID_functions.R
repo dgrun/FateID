@@ -532,9 +532,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     par(mar = c(3,5,2.5,2))
     plot(d,xlab="",ylab="",main=n,pch=20,cex=0,col="grey",axes=FALSE)
     kk <- order(v,decreasing=F)
-    for ( k in kk ){
-      points(d[k,1],d[k,2],col=ColorRamp[v[k]],pch=20,cex=1.5)
-    }
+    points(d[kk,1],d[kk,2],col=ColorRamp[v[kk]],pch=20,cex=1.5)
     par(mar = c(3,2.5,2.5,2))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
@@ -575,7 +573,9 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
     kk <- order(v,decreasing=F)
-    apply(cbind(d[kk,],ColorRamp[v[kk]]),1,function(x) points3d(x[1],x[2],x[3],col=x[4],pch="16",size=8))
+    points3d(d[kk,1],d[kk,2],d[kk,3],col=ColorRamp[v[kk]],pch="16",size=8)
+    
+#    apply(cbind(d[kk,],ColorRamp[v[kk]]),1,function(x) points3d(x[1],x[2],x[3],col=x[4],pch="16",size=8))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
           col=ColorRamp,
@@ -711,9 +711,11 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     #par(mar = c(3,5,2.5,2))
     plot(mnd[,g1],mnd[,g2],col="grey",pch=20,cex=0, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n",main=paste("fate bias:",tn,sep=" "))
     kk <- order(v,decreasing=F)
-    for ( k in kk ){
-      points(mnd[k,g1],mnd[k,g2],col=adjustcolor(ColorRamp[v[k]],tp),pch=20,cex=1.5)
-    }
+    points(mnd[kk,g1],mnd[kk,g2],col=adjustcolor(ColorRamp[v[kk]],tp),pch=20,cex=1.5)
+
+    #for ( k in kk ){
+    #  points(mnd[k,g1],mnd[k,g2],col=adjustcolor(ColorRamp[v[k]],tp),pch=20,cex=1.5)
+    #}
     if (plotnum == TRUE){
       text(mnd[,g1],mnd[,g2],mnd$clust_n,col=adjustcolor("black",tp),cex=0.75,font=4)
     }
@@ -1201,10 +1203,9 @@ plotexpression <- function(x,y,g,n,col=NULL,name=NULL,cluster=FALSE,k=5,locreg=F
 #' @examples
 #' x <- intestine$x
 #' y <- intestine$y
-#' fcol <- intestine$fcol
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' k <- impGenes(fb,"t9",ithr=.02,zthr=2)
+#' k <- impGenes(fb,"t6",ithr=.02,zthr=2)
 #' @export
 impGenes <- function(fb,tn,ithr=.02,zthr=2){
   require(pheatmap)
