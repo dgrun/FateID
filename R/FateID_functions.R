@@ -4,7 +4,7 @@
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
 #' @param y clustering partition. A vector with an integer cluster number for each cell. The order of the cells has to be the same as for the columns of x.
 #' @param tar vector of integers representing target cluster numbers. Each element of \code{tar} corresponds to a cluster of cells committed towards a particular mature state. One cluster per different cell lineage has to be given and is used as a starting point for learning the differentiation trajectory.
-#' @param fpv p-value cutoff for calling differentially expressed genes. This is a cutoff for the Benjamini-Hochberg corrected false discovery rate. Default value is 0.5.
+#' @param fpv p-value cutoff for calling differentially expressed genes. This is a cutoff for the Benjamini-Hochberg corrected false discovery rate. Default value is 0.05.
 #' @param  ... additional arguments to be passed to the low level function \code{diffexpnb}.
 #' @details The function determines differentially expressed between the cells in each of the target clusters in comparison to the remaining cells by using \code{diffexpnb} function.
 #' @return A filtered expression table with features extracted based on differentially expressed genes.
@@ -12,7 +12,7 @@
 #' x <- intestine$x
 #' y <- intestine$y
 #' tar <- c(6,9,13)
-#' xf <- getFeat(x,y,tar,fpv=fpv)
+#' xf <- getFeat(x,y,tar,fpv=.05)
 #' @export
 getFeat <- function(x,y,tar,fpv=.05,...){
   g    <- c()
@@ -47,6 +47,7 @@ getFeat <- function(x,y,tar,fpv=.05,...){
 #' FMarker <- list(c("Defa20__chr8","Defa24__chr8"), "Clca3__chr3", "Alpi__chr1")
 #' xf <- getPart(x,FMarker,fthr=NULL,n=5)
 #'
+#' @importFrom utils head
 #' @export
 getPart <- function(x,FMarker,fthr=NULL,n=25){
   y <- rep(1,ncol(x))
@@ -59,7 +60,7 @@ getPart <- function(x,FMarker,fthr=NULL,n=25){
       }else{
         u <- apply(x[FMarker[[i]],],2,sum)
       }
-      u <- u[order(u,decreasing=T)]
+      u <- u[order(u,decreasing=TRUE)]
       fthr[i] <- mean(head(u,n))
     }
     if ( length(FMarker[[i]]) == 1 ){
@@ -96,10 +97,11 @@ getPart <- function(x,FMarker,fthr=NULL,n=25){
 #' y <- intestine$y
 #' tar <- c(6,9,13)
 #' rc <- reclassify(x,y,tar,z=NULL,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL,q=.9)
+#' @importFrom stats quantile cor
+#' @importFrom randomForest randomForest
 #' @export
 
 reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL,q=.9,...){
-  require(randomForest)
   if (!is.null(seed) ) set.seed(seed)
   
   # create cell-to-cell distances if not supplied
@@ -119,7 +121,7 @@ reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=N
   if ( use.dist ){
       # reference set
     xr <- di[trt,trt]
-      # training set
+      # test set
     xt <- di[n,trt]
   }else{
     xr <- t(d[,trt])
@@ -128,7 +130,7 @@ reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=N
   pr <- y[trt]
 
   if ( is.null(nbtree) ) nbtree = nrow(xr)*nbfactor
-  rf <- randomForest(xr,as.factor(pr),xt,nbtree=nbtree,norm.votes=T,importance=TRUE,...)
+  rf <- randomForest(xr,as.factor(pr),xt,nbtree=nbtree,norm.votes=TRUE,importance=TRUE,...)
   
   tv <- as.data.frame(rf$test$votes)
   names(tv) <- paste("t",names(tv),sep="")
@@ -172,9 +174,10 @@ reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=N
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
 #' head(fb$probs)
+#' @importFrom stats binom.test cor median 
+#' @importFrom utils head
 #' @export
 fateBias <- function(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL,...){
-  require(randomForest)
   if (!is.null(seed) ) set.seed(seed)
 
   if (!is.null(z) ) z <- as.matrix(z)
@@ -266,7 +269,7 @@ fateBias <- function(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,
     pr <- apply(probs[trt,],1,function(x,y) y[which(x == max(x))][1],y=tar)
  
     if ( is.null(nbtree) ) nbtree = ncol(xr)*nbfactor
-    rf <- randomForest(xr,as.factor(pr),xt,nbtree=nbtree,norm.votes=F,importance=TRUE,...)
+    rf <- randomForest(xr,as.factor(pr),xt,nbtree=nbtree,norm.votes=FALSE,importance=TRUE,...)
     rfl[[i]] <- rf
     # update probability matrix based on random forest votes for test set
     tv <- as.data.frame(rf$test$votes)
@@ -301,9 +304,10 @@ bias <- function(tvn){
 
 #' @title Computation of dimensional reduction representations
 #'
-#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, modified lle, diffusion maps, DDRTree 
+#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, diffusion maps 
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
 #' @param z Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}
+#' @param m a vector of dimensional reduction representations to be computed. By default, the following representations are computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map). The default value of m is \code{c("lle","cmd","dm","tsne")}. Any subset of these methods can be selected.
 #' @param k vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{c(2,3)}.
 #' @param lle.n integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.
 #' @param dm.sigma parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is 1000.
@@ -311,68 +315,46 @@ bias <- function(tvn){
 #' @param tsne.perplexity positive number. Perplexity used in the t-SNE computation. Default value is 30.
 #' @param seed integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the randomness of the random forest algorithm. Default is \code{NULL}
 #' @return A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
-#'   \item{lle}{locally linear embedding calculated by the lle function from the python scikit-learn package.}
-#'   \item{llem}{modified locally linear embedding calculated by the lle function from the python scikit-learn package.}
+#'   \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
 #'   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
 #'   \item{dm}{diffusion map computed by the \code{DiffusionMap} function of the \pkg{destiny} package.}
 #'   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
-#'   \item{DDRTree}{DDRTree computed by the \code{DDRTree} function of the \pkg{DDRTree} package.}
 #'
 #' Component names of the second dimension are a concatenation of a capital D and an integer number of the dimension. There is one component for each dimension in \code{k}.
 #' @examples
+#'
 #' x <- intestine$x
-#' dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 #' plot(dr[["cmd"]][["D2"]],pch=20,col="grey")
+#'
+#' @importFrom stats cor cmdscale as.dist
+#' @importFrom lle lle
+#' @importFrom Rtsne Rtsne
 #' @export
-compdr <- function(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345){
-  require(lle)
-  require(destiny)
-  require(DDRTree)
-  require(Rtsne)
+compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle"),k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345){
   if (!is.null(seed) ) set.seed(seed)
-  pycommand <- paste(system.file(package="FateID"),"lle.py", sep="/")
+
   dr <- list()
   d  <- t(x)
 
   # create cell-to-cell distances if not supplied
   di <- if ( is.null(z) )  1 - cor(x) else as.matrix(z)
 
-  # create random input and output file names for python based computations in working directory 
-  tfi <- tempfile()
-  tfo <- tempfile()
-  write.table(d,tfi,col.names=FALSE,row.names=FALSE,sep=",")
-
+ 
   # calculate diffusion map
-  x <- DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
+  if ( "dm" %in% m ) x <- destiny::DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
 
   # compute dimensional reduction to the set of k dimensions with various methods
-  for ( j in c("lle","llem","cmd","dm","tsne","DDRTree") ) dr[[j]] <- list()
+  for ( j in m ) dr[[j]] <- list()
   for ( j in k){
     jn <- paste("D",j,sep="")
-    rv <- system(paste("python ",pycommand," -i ",tfi," -o ",tfo," -c ",j," -n ",lle.n,sep=""),intern=FALSE)
-    if ( rv != 0 ){
-      cat("FateID requires Python >= v2.7 and python libraries numpy and sklearn.","\n")
-      cat("lle computation will be done in R","\n") 
-      dr[["lle"]][[jn]] <- as.data.frame(lle(d,m=j,k=lle.n)$Y)
-    }else{
-      dr[["lle"]][[jn]]  <- read.csv(tfo,sep=",",header=F)
-    }
-    rv <- system(paste("python ",pycommand," -i ",tfi," -o ",tfo," -m modified -c ",j," -n ",lle.n,sep=""),intern=FALSE)
-    if ( rv != 0 ){
-      cat("FateID requires Python >= v2.7 and python libraries numpy and sklearn.","\n")
-      cat("llem computation will be skipped","\n") 
-    }else{
-      dr[["llem"]][[jn]] <- read.csv(tfo,sep=",",header=F)
-    }
-    dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
-    dr[["DDRTree"]][[jn]] <- as.data.frame(t(DDRTree(t(d), dimensions = j, verbose = FALSE)$Z))
-    dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
-    dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
+    if ( "lle" %in% m ) dr[["lle"]][[jn]] <- as.data.frame(lle(d,m=j,k=lle.n)$Y)
+    if ( "cmd" %in% m ) dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
+    if ( "dm" %in% m ) dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
+    if ( "tsne" %in% m ) dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
   }
 
-  #remove temporary file names for python based computation
-  system(paste("rm ",tfi," ",tfo,sep=""))
-  return(dr)
+   return(dr)
 }
 
 #' @title Computation of a principal curve for a given dimensional reduction representation
@@ -382,7 +364,7 @@ compdr <- function(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclide
 #' @param fb fateBias object returned by the function \code{fateBias}.
 #' @param dr list of dimensional reduction representations returned by the function \code{compdr}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{llem}, \code{cmd}, \code{dm}, \code{tsne}, \code{DDRTree}. Default value is \code{cmd}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param trthr real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the computation of the principal curve. If \code{NULL} then only cells with a significant bias >1 are included for each trajectory. The bias is computed as the ratio of the number of votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Default value is \code{NULL}.
 #' @param start integer number representing a specified starting cluster number for all trajectories, i. e. a common progenitor cluster. The argument is optional. Default value is \code{NULL}.
 #' @param  ... additional arguments to be passed to the low level function \code{principal.curve}.
@@ -392,15 +374,18 @@ compdr <- function(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclide
 #'   \item{pr}{A list of principal curve objects produced by the \code{principal.curve} function from the \pkg{princurve} package. Each component corresponds to one differentiation trajectory giving rise to one of the target clusters from the \code{fb} object.}
 #'   \item{trc}{A list of ordered cell IDs for each trajectory in \code{pr}.}
 #' @examples
+#'
 #' x <- intestine$x
 #' y <- intestine$y
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.25,start=NULL)
+#'
+#' @importFrom stats median
+#' @importFrom princurve principal.curve
 #' @export
 prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
-  require(princurve)
   pr <- list()
   
   # calculate principal curve for each trajectory
@@ -414,7 +399,7 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
         gs <- names(y) %in% rownames(fb$votes)[b$bias[,j] > 1 & b$pv < .05]
       }
       gs <- gs & y %in% c(start,as.numeric(sub("t","",j)))
-      st <- principal.curve(as.matrix(dr[[m]][[paste("D",k,sep="")]][gs,]),plot.true=F,...)
+      st <- principal.curve(as.matrix(dr[[m]][[paste("D",k,sep="")]][gs,]),plot.true=FALSE,...)
     }
     # infer final curve
     if ( !is.null(trthr) ){
@@ -437,9 +422,9 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
     f[1:nrow(xa)] <- TRUE
 
     if ( is.null(start) ){
-      pr[[j]] <- principal.curve(as.matrix(xt),plot.true=F,...)
+      pr[[j]] <- principal.curve(as.matrix(xt),plot.true=FALSE,...)
     }else{
-      pr[[j]] <- principal.curve(as.matrix(xt),plot.true=F,start=st$s[st$tag,],...)
+      pr[[j]] <- principal.curve(as.matrix(xt),plot.true=FALSE,start=st$s[st$tag,],...)
     }
     pr[[j]]$s <- pr[[j]]$s[f,]
     pr[[j]]$tag <- pr[[j]]$tag[pr[[j]]$tag <= sum(f)]
@@ -470,15 +455,17 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
 #' @details The function orders all cells assigned to a differentiation trajectory with a significant fate bias >1 or a probability greater \code{trthr} for a trajectory, respectively, by diffusion pseudotime.
 #' @return trc A list of ordered cell IDs for each trajectory giving rise to one of the targer clusters in \code{fb}
 #' @examples
+#'
 #' x <- intestine$x
 #' y <- intestine$y
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 #' trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
+#'
+#' @importFrom stats median
 #' @export
 dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
-  require(destiny)
   trc <- list()
   for ( j in names(fb$probs) ){
     if ( ! is.null(trthr) ){
@@ -489,21 +476,20 @@ dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
       b <- bias(votes)
       n  <- rownames(votes)[b$bias[,j] > 1 & b$pv < .05]
     }
-    dm <- DiffusionMap(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-    root_idx <- random_root(dm)
-    pt <- DPT(dm, root_idx)
+    dm <- destiny::DiffusionMap(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
+    root_idx <- destiny::random_root(dm)
+    pt <- destiny::DPT(dm, root_idx)
     pto <- pt[root_idx, ]
     
     #b <- pt@branch[, 1]
     #tip_idx <- which(b==1 & !is.na(b) & pt@tips[, 1])
     #pto <- pt[tip_idx, ]
     
-    n <- n[order(pto,decreasing=F)]
+    n <- n[order(pto,decreasing=FALSE)]
 
-    #require(dpt)
     #ts <- Transitions(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-    #pt <- dpt(ts, branching = FALSE)
-    #n <- n[order(pt$DPT,decreasing=F)]
+    #pt <- dpt::dpt(ts, branching = FALSE)
+    #n <- n[order(pt$DPT,decreasing=FALSE)]
   
     if ( median((1:length(n))[y[n] == sub("t","",j)]) < median((1:length(n))[y[n] != sub("t","",j)]) ) n <- rev(n)
     trc[[j]] <- n
@@ -512,7 +498,6 @@ dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
 }
 
 plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
-   require(RColorBrewer)
  
 
   if ( !is.null(g) ){
@@ -531,9 +516,11 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     par(mar = c(3,5,2.5,2))
     plot(d,xlab="",ylab="",main=n,pch=20,cex=0,col="grey",axes=FALSE)
-    kk <- order(v,decreasing=F)
+    kk <- order(v,decreasing=FALSE)
     points(d[kk,1],d[kk,2],col=ColorRamp[v[kk]],pch=20,cex=1.5)
-    par(mar = c(3,2.5,2.5,2))
+    par(mar = c(20,2.5,2.5,4))
+    ##par(mar = c(3,2.5,2.5,2))
+    #par(mar = c(3,1,2.5,2))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
           col=ColorRamp,
@@ -551,8 +538,6 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 }
 
 plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
-  require(rgl)
-  require(RColorBrewer)
   plot3d(d[,1], d[,2], d[,3], xlab = "", ylab = "", zlab = "", alpha = tp, col = "grey", pch="16", type="p", size = 8, point_antialias = TRUE)
   if ( is.null(g) ){
     set.seed(111111)
@@ -572,7 +557,7 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
-    kk <- order(v,decreasing=F)
+    kk <- order(v,decreasing=FALSE)
     points3d(d[kk,1],d[kk,2],d[kk,3],col=ColorRamp[v[kk]],pch="16",size=8)
     
 #    apply(cbind(d[kk,],ColorRamp[v[kk]]),1,function(x) points3d(x[1],x[2],x[3],col=x[4],pch="16",size=8))
@@ -595,7 +580,7 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @param prc logical. If \code{TRUE}, then a principal curve is computed and returned. Default is \code{FALSE}.
 #' @param logsc logical. If \code{TRUE}, then gene expression of fate bias probabilities are plotted on a log2 scale. Default value is \code{FALSE}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{llem}, \code{cmd}, \code{dm}, \code{tsne}, \code{DDRTree}. Default value is \code{cmd}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param kr integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
 #' @param fb fateBias object returned by the function \code{fateBias}. If \code{fb} is provided, then a principal curve is computed and shown in the plot. Default value is \code{NULL}. The curve is only displayed if \code{g} equal \code{NULL}.
@@ -605,6 +590,7 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @param  ... additional arguments to be passed to the low level function \code{principal.curve}.
 #' @return If \code{fb} is provided as input argument and \code{prc} equals \code{TRUE} then the output corresponds to the output of \code{prcurve}. Otherwise, only ouput is generated is \code{g} equals E. In this case a vector of fate bias entropies for all cells is given.
 #' @examples
+#'
 #' x <- intestine$x
 #' y <- intestine$y
 #' # v contains all genes (no feature selection like in x)
@@ -612,16 +598,18 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' fcol <- intestine$fcol
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 #'
 #' # plot principal curves
-#' pr <- plotFateMap(y,dr,k=2,prc=TURE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
-#'
-#' # plot expression of fate bias probability for target cluster 6 in 3 dimensions using t-SNE
-#' plotFateMap(y,dr,g="t6",prc=FALSE,k=3,m="tsne",fb=fb)
+#' pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
 #'
 #' # plot expression of gene Apoa1__chr9
 #' plotFateMap(y,dr,x=v,g="Apoa1__chr9",prc=FALSE,k=2,m="cmd",col=intestine$fcol)
+#'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
+#' @importFrom graphics layout plot points text image abline axis box legend lines par
+#' @importFrom RColorBrewer brewer.pal
+#' @importFrom rgl plot3d points3d lines3d text3d
 #' @export
 plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="cmd",kr=NULL,col=NULL,fb=NULL,trthr=NULL,start=NULL,tp=1,...){
   if ( is.null(kr) ) kr <- 1:min(k,3)
@@ -685,16 +673,18 @@ plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="c
 #' @examples
 #' x <- intestine$x
 #' y <- intestine$y
+#' v <- intestine$v
 #' 
-#' fcol <- intestine$fcol
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
 #' gene2gene(v,y,"Muc2__chr7","Apoa1__chr9")
-#' gene2gene(v,y,"Muc2__chr7","Apoa1__chr9",fb=fb,tn="t6",plotnum=F)
+#' gene2gene(v,y,"Muc2__chr7","Apoa1__chr9",fb=fb,tn="t6",plotnum=FALSE)
 #'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
+#' @importFrom graphics layout plot points text image
+#' @importFrom RColorBrewer brewer.pal
 #' @export
 gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plotnum=TRUE){
-  require(RColorBrewer)
   set.seed(111111)
   if ( is.null(col) ) col <- sample(rainbow(max(y)))
   if ( is.null(clusters) ) clusters <- sort(unique(y))
@@ -710,7 +700,7 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     #par(mar = c(3,5,2.5,2))
     plot(mnd[,g1],mnd[,g2],col="grey",pch=20,cex=0, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n",main=paste("fate bias:",tn,sep=" "))
-    kk <- order(v,decreasing=F)
+    kk <- order(v,decreasing=FALSE)
     points(mnd[kk,g1],mnd[kk,g2],col=adjustcolor(ColorRamp[v[kk]],tp),pch=20,cex=1.5)
 
     #for ( k in kk ){
@@ -719,7 +709,9 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     if (plotnum == TRUE){
       text(mnd[,g1],mnd[,g2],mnd$clust_n,col=adjustcolor("black",tp),cex=0.75,font=4)
     }
+ 
     #par(mar = c(3,2.5,2.5,2))
+    par(mar = c(20,2.5,2.5,4))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
           col=ColorRamp,
@@ -754,6 +746,7 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
 #' \item{vf2}{a data frame of three columns, indicating the mean \code{m}, the variance \code{v} and the fitted variance \code{vm} for set \code{B}.}
 #' \item{res}{a data frame with the results of the differential gene expression analysis with the structure of the \code{DESeq} output, displaying mean expression of the two sets, fold change and log2 fold change between the two sets, the p-value for differential expression (\code{pval}) and the Benjamini-Hochberg corrected false discovery rate (\code{padj}).} 
 #' @examples
+#'
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
@@ -766,12 +759,15 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
 #' A <- rownames(fb$probs)[fb$probs[,"t6"]  > .3]
 #' B <- rownames(fb$probs)[fb$probs[,"t13"] > .3]
 #' de <- diffexpnb(v,A=A,B=B)
+#'
+#' @importFrom DESeq2 DESeqDataSetFromMatrix DESeq results
+#' @importFrom stats var approxfun fitted lm coef dnbinom p.adjust
+#' @importFrom locfit locfit
 #' @export
 diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,locreg=FALSE,...){
   if ( ! method %in% c("per-condition","pooled") ) stop("invalid method: choose pooled or per-condition")
   x <- x[,c(A,B)]
   if ( DESeq ){
-    require(DESeq2)
     # run on sc@expdata
     des <- data.frame( row.names = colnames(x), condition = factor(c( rep(1,length(A)), rep(2,length(B)) )), libType = rep("single-end", dim(x)[2]))
     cds <- DESeqDataSetFromMatrix(countData=round(x,0),colData=des,design =~ condition,...) 
@@ -858,6 +854,7 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 #' @param show_names logical value. If \code{TRUE} then gene names displayed for differentially expressed genes. Default value is \code{FALSE}.
 #' @return None
 #' @examples
+#'
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
@@ -871,6 +868,8 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 #' B <- rownames(fb$probs)[fb$probs[,"t13"] > .3]
 #' de <- diffexpnb(v,A=A,B=B)
 #' plotdiffgenesnb(de,pthr=.05)
+#'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
 #' @export
 plotdiffgenesnb <- function(x,pthr=.05,padj=TRUE,lthr=0,mthr=-Inf,Aname=NULL,Bname=NULL,show_names=TRUE){
   y <- as.data.frame(x$res)
@@ -928,20 +927,26 @@ filterset <- function(x,n=NULL,minexpr=2,minnumber=1){
 #' \item{x}{pseudo-temporal expression profiles, i. e. the input expression data frame \code{x} after smoothing by running mean or local regression, respectivey, and normalization. The sum of smoothened gene expression values across all cells is normalized to 1.}
 #' \item{zs}{data frame of z-score transformed pseudo-temporal expression profiles.}
 #' @examples
+#'
+#' \donttest{
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' pr <- prcurve(y,fb,dr,k=3,m="dm",trthr=0.4,start=NULL)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
 #' s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+#' }
+#'
+#' @importFrom stats var predict loess
+#' @importFrom caTools runmean
+#' @importFrom som som
 #' @export
 getsom <- function(x,nb=1000,k=5,locreg=TRUE,alpha=.5){
-  require(som)
-  require(caTools)
   if ( locreg ){
     x <- t(apply(x,1,function(x,alpha){ v <- 1:length(x); predict(loess( x ~ v, span=alpha ))},alpha=alpha))
     x <- t(apply(x,1,function(x){ x[x<0] <- .1; x }))
@@ -968,17 +973,23 @@ getsom <- function(x,nb=1000,k=5,locreg=TRUE,alpha=.5){
 #' \item{all.z}{data frame with z-score transformed normalized pseudo-temporal expression profile for all genes in the self-organizing map, ordered by node number.}
 #' \item{all.b}{data frame with binarized pseudo-temporal expression profile for all genes in the self-organizing map, ordered by node number. Expression is 1 in cells with z-score > 1 and -1 in cells with z-score < -1, and 0 otherwise.}
 #' @examples
+#'
+#' \donttest{
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' pr <- prcurve(y,fb,dr,k=3,m="dm",trthr=0.4,start=NULL)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
 #' s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
 #' ps <- procsom(s1d,corthr=.85,minsom=3)
+#' }
+#'
+#' @importFrom stats var cor aggregate
 #' @export
 procsom <- function(s1d,corthr=.85,minsom=3){
   f  <- order(s1d$som$visual$y,decreasing=FALSE)
@@ -1051,22 +1062,29 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 #' @param ygrid logical value. If \code{TRUE} then the partitioning along the y-axis is indicated by horizontal lines representing the boundaries of all positions with a given value in \code{ypart}. 
 #' @return None
 #' @examples
+#'
+#' \donttest{
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
+#' fcol <- intestine$col
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' pr <- prcurve(y,fb,dr,k=3,m="dm",trthr=0.4,start=NULL)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
 #' s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
 #' ps <- procsom(s1d,corthr=.85,minsom=3)
 #' plotheatmap(ps$all.e,xpart=y[n],xcol=fcol,ypart=ps$nodes,xgrid=FALSE,ygrid=TRUE,xlab=FALSE)
+#' }
+#'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
+#' @importFrom graphics layout plot points text image abline axis box legend lines par
+#' @importFrom RColorBrewer brewer.pal
 #' @export
 plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,ycol=NULL,ylab=TRUE,ygrid=FALSE){
-  require(RColorBrewer)
-
   mi  <- min(x,na.rm=TRUE)
   ma  <- max(x,na.rm=TRUE)
   layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(5,1), heights=c(5,1))
@@ -1088,7 +1106,7 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
       delta <- .5/(length(xpart) - 1)
       if ( xgrid & max(ol) < 1) abline(v=max(ol) + delta,col="grey",lty=2)
     }
-    if ( xlab ) axis(1,at=tmp,lab=unique(xpart))
+    if ( xlab ) axis(1,at=tmp,labels=unique(xpart))
   }
   set.seed(20)
   if ( !is.null(ypart) ){
@@ -1100,9 +1118,11 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
       delta <- .5/(length(ypart) - 1)
       if ( ygrid & max(ol) < 1) abline(a=max(ol) + delta,b=0,col="grey",lty=2)
     }
-    if ( ylab ) axis(2,at=tmp,lab=unique(ypart))
+    if ( ylab ) axis(2,at=tmp,labels=unique(ypart))
   }
-  par(mar = c(20,2.5,2.5,2))
+  
+  par(mar = c(20,2,2.5,2))
+  #par(mar = c(10,1,5,1))
   image(1, ColorLevels,
         matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
         col=ColorRamp,
@@ -1124,14 +1144,18 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @param locreg logical value. If \code{TRUE}, then pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. Default value is \code{TRUE}.
 #' @param alpha positive real number. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.
 #' @param types optional vector with IDs for different subsets of cells in \code{y}, e. g. different batches. All cells with the same ID will be displayed by the same symbol and color. Default value is \code{NULL}
+#' @return None
 #' @examples
+#'
+#' \donttest{
 #' x <- intestine$x
 #' y <- intestine$y
 #' v <- intestine$v
 #' fcol <- intestine$col
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' pr <- prcurve(y,fb,dr,k=3,m="dm",trthr=0.4,start=NULL)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
 #' s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
@@ -1139,9 +1163,14 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' # plot average profile of all genes of node 1 in the self-organizing map
 #' g <- names(ps$nodes)[ps$nodes == 1]
 #' plotexpression(v,y,g,n,k=25,col=fcol,name="Node 1",cluster=FALSE,locreg=TRUE,alpha=.5,types=NULL)
+#' }
+#'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
+#' @importFrom graphics layout plot points text image abline axis box legend lines par
+#' @importFrom stats loess predict
+#' @importFrom caTools runmean
 #' @export
 plotexpression <- function(x,y,g,n,col=NULL,name=NULL,cluster=FALSE,k=5,locreg=FALSE,alpha=.5,types=NULL){
-  require(caTools)
   cl <- unique(y[n])
   set.seed(111111)
   if ( is.null(col) ) col <- sample(rainbow(max(y)))
@@ -1186,7 +1215,7 @@ plotexpression <- function(x,y,g,n,col=NULL,name=NULL,cluster=FALSE,k=5,locreg=F
 
   axis(2)
   box()
-  if ( cluster ) axis(1,at=xc,lab=cl)
+  if ( cluster ) axis(1,at=xc,labels=cl)
 }
 
 #' @title Extract genes with high importance values for random forest classification
@@ -1206,9 +1235,9 @@ plotexpression <- function(x,y,g,n,col=NULL,name=NULL,cluster=FALSE,k=5,locreg=F
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
 #' k <- impGenes(fb,"t6",ithr=.02,zthr=2)
+#' @importFrom pheatmap pheatmap
 #' @export
 impGenes <- function(fb,tn,ithr=.02,zthr=2){
-  require(pheatmap)
   n <- c()
   for ( i in 1:length(fb$rfl) ){
     k <- fb$rfl[[i]]$importance[,sub("t","",tn)]
@@ -1222,6 +1251,6 @@ impGenes <- function(fb,tn,ithr=.02,zthr=2){
     if ( i == 1 ) de <- data.frame(fb$rfl[[i]]$importanceSD[n,sub("t","",tn)]) else de[,i] <- fb$rfl[[i]]$importanceSD[n,sub("t","",tn)]
   }
   names(d) <- names(de) <- 1:ncol(d)
-  pheatmap(d,cluster_cols=F)
+  pheatmap(d,cluster_cols=FALSE)
   return(list(d=d,de=de))
 }

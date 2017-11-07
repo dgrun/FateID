@@ -25,7 +25,7 @@ plotFateMap(y, dr, x = NULL, g = NULL, n = NULL, prc = FALSE,
 
 \item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.}
 
-\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{llem}, \code{cmd}, \code{dm}, \code{tsne}, \code{DDRTree}. Default value is \code{cmd}.}
+\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
 
 \item{kr}{integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.}
 
@@ -48,6 +48,7 @@ If \code{fb} is provided as input argument and \code{prc} equals \code{TRUE} the
 This function plots a dimensional reduction representation using the output of the \code{compdr} function as input. It allows display of the input clusters as well as color coding of fate bias probabilities and gene expression.
 }
 \examples{
+
 x <- intestine$x
 y <- intestine$y
 # v contains all genes (no feature selection like in x)
@@ -55,14 +56,12 @@ v <- intestine$v
 fcol <- intestine$fcol
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 
 # plot principal curves
-pr <- plotFateMap(y,dr,k=2,prc=TURE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
-
-# plot expression of fate bias probability for target cluster 6 in 3 dimensions using t-SNE
-plotFateMap(y,dr,g="t6",prc=FALSE,k=3,m="tsne",fb=fb)
+pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
 
 # plot expression of gene Apoa1__chr9
 plotFateMap(y,dr,x=v,g="Apoa1__chr9",prc=FALSE,k=2,m="cmd",col=intestine$fcol)
+
 }

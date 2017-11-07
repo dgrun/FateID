@@ -39,6 +39,7 @@ Otherwise, a list of three components is returned:
 This function performs differential expression analysis between two sets of single cell transcriptomes. The inference is based on a noise model or relies on the \code{DESeq2} approach.
 }
 \examples{
+
 x <- intestine$x
 y <- intestine$y
 v <- intestine$v
@@ -51,4 +52,5 @@ thr <- .3
 A <- rownames(fb$probs)[fb$probs[,"t6"]  > .3]
 B <- rownames(fb$probs)[fb$probs[,"t13"] > .3]
 de <- diffexpnb(v,A=A,B=B)
+
 }

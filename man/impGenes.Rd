@@ -27,8 +27,7 @@ This function extracts all genes with an importance value for classifying cells 
 \examples{
 x <- intestine$x
 y <- intestine$y
-fcol <- intestine$fcol
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-k <- impGenes(fb,"t9",ithr=.02,zthr=2)
+k <- impGenes(fb,"t6",ithr=.02,zthr=2)
 }

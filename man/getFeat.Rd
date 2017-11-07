@@ -13,7 +13,7 @@ getFeat(x, y, tar, fpv = 0.05, ...)
 
 \item{tar}{vector of integers representing target cluster numbers. Each element of \code{tar} corresponds to a cluster of cells committed towards a particular mature state. One cluster per different cell lineage has to be given and is used as a starting point for learning the differentiation trajectory.}
 
-\item{fpv}{p-value cutoff for calling differentially expressed genes. This is a cutoff for the Benjamini-Hochberg corrected false discovery rate. Default value is 0.5.}
+\item{fpv}{p-value cutoff for calling differentially expressed genes. This is a cutoff for the Benjamini-Hochberg corrected false discovery rate. Default value is 0.05.}
 
 \item{...}{additional arguments to be passed to the low level function \code{diffexpnb}.}
 }
@@ -30,5 +30,5 @@ The function determines differentially expressed between the cells in each of th
 x <- intestine$x
 y <- intestine$y
 tar <- c(6,9,13)
-xf <- getFeat(x,y,tar,fpv=fpv)
+xf <- getFeat(x,y,tar,fpv=.05)
 }

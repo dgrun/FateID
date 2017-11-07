@@ -30,17 +30,23 @@ plotexpression(x, y, g, n, col = NULL, name = NULL, cluster = FALSE,
 
 \item{types}{optional vector with IDs for different subsets of cells in \code{y}, e. g. different batches. All cells with the same ID will be displayed by the same symbol and color. Default value is \code{NULL}}
 }
+\value{
+None
+}
 \description{
 This function allows plotting pseudo-temporal expression profiles for single genes or groups of genes.
 }
 \examples{
+
+\donttest{
 x <- intestine$x
 y <- intestine$y
 v <- intestine$v
 fcol <- intestine$col
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-pr <- prcurve(y,fb,dr,k=3,m="dm",trthr=0.4,start=NULL)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)
 s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
@@ -48,4 +54,6 @@ ps <- procsom(s1d,corthr=.85,minsom=3)
 # plot average profile of all genes of node 1 in the self-organizing map
 g <- names(ps$nodes)[ps$nodes == 1]
 plotexpression(v,y,g,n,k=25,col=fcol,name="Node 1",cluster=FALSE,locreg=TRUE,alpha=.5,types=NULL)
+}
+
 }

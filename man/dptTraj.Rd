@@ -31,10 +31,12 @@ This function computes a pseudo-temporal ordering of cells reflecting the differ
 The function orders all cells assigned to a differentiation trajectory with a significant fate bias >1 or a probability greater \code{trthr} for a trajectory, respectively, by diffusion pseudotime.
 }
 \examples{
+
 x <- intestine$x
 y <- intestine$y
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
 trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
+
 }
