@@ -828,9 +828,8 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
     }
     sf  <- function(x,i) x**2/(max(x + 1e-6,vf(x,i)) - x)
 
-    #psp <- 1e-99
-    #pv <- apply(data.frame(m[[1]],m[[2]]),1,function(x){ p12 <- (dnbinom(0:round(x[1]*length(A) + x[2]*length(B),0),mu=mean(x)*length(A),size=length(A)*sf(mean(x),1)) + psp)*(dnbinom(round(x[1]*length(A) + x[2]*length(B),0):0,mu=mean(x)*length(B),size=length(B)*sf(mean(x),2)) + psp); sum(p12[p12 <= p12[round(x[1]*length(A),0) + 1]])/sum(p12)} )
-    pv <- apply(data.frame(m[[1]],m[[2]]),1,function(x){ p12 <- (dnbinom(0:round(x[1]*length(A) + x[2]*length(B),0),mu=mean(x)*length(A),size=length(A)*sf(mean(x),1)))*(dnbinom(round(x[1]*length(A) + x[2]*length(B),0):0,mu=mean(x)*length(B),size=length(B)*sf(mean(x),2))); if ( sum(p12) == 0 ) 0 else sum(p12[p12 <= p12[round(x[1]*length(A),0) + 1]])/(sum(p12))} )
+    psp <- 1e-99
+    pv <- apply(data.frame(m[[1]],m[[2]]),1,function(x){ p12 <- (dnbinom(0:round(x[1]*length(A) + x[2]*length(B),0),mu=mean(x)*length(A),size=length(A)*sf(mean(x),1)) + psp)*(dnbinom(round(x[1]*length(A) + x[2]*length(B),0):0,mu=mean(x)*length(B),size=length(B)*sf(mean(x),2)) + psp); sum(p12[p12 <= p12[round(x[1]*length(A),0) + 1]])/sum(p12)} )
     
     res <- data.frame(baseMean=(m[[1]] + m[[2]])/2,baseMeanA=m[[1]],baseMeanB=m[[2]],foldChange=m[[2]]/m[[1]],log2FoldChange=log2(m[[2]]/m[[1]]),pval=pv,padj=p.adjust(pv,method="BH"))
     vf1 <- data.frame(m=m[[1]],v=v[[1]],vm=vf(m[[1]],1))
