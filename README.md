@@ -32,7 +32,7 @@ install_github("dgrun/FateID")
 
 Load package:
 ```
-libary(FateID)
+library(FateID)
 ```
 
 See vignette for details and examples:
