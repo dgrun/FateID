@@ -48,7 +48,7 @@ x <- getFeat(v,y,tar,fpv=0.01)
 tar <- c(6,9,13)
 x <- intestine$x
 y <- intestine$y
-fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
+fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, adapt=TRUE, confidence=0.75, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
 
 ## ------------------------------------------------------------------------
 dr  <- compdr(x, z=NULL, m=c("tsne","cmd","dm","lle"), k=c(2,3), lle.n=30, dm.sigma="local", dm.distance="euclidean", tsne.perplexity=30, seed=12345)
@@ -81,13 +81,14 @@ n <- pr$trc[["t6"]]
 
 ## ------------------------------------------------------------------------
 trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
+#n   <- trc[["t6"]]
 
 ## ------------------------------------------------------------------------
 v <- intestine$v
 fs  <- filterset(v,n=n,minexpr=2,minnumber=1)
 
 ## ------------------------------------------------------------------------
-s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+s1d <- getsom(fs,nb=1000,alpha=.5)
 
 ## ------------------------------------------------------------------------
 ps  <- procsom(s1d,corthr=.85,minsom=3)
@@ -112,13 +113,13 @@ plotheatmap(ps$all.b, xpart=y[n], xcol=fcol, ypart=ps$nodes, xgrid=FALSE, ygrid=
 g <- names(ps$nodes)[ps$nodes == 1]
 
 ## ------------------------------------------------------------------------
-plotexpression(fs, y, g, n, k=25, col=fcol, name="Node 1", cluster=FALSE, locreg=TRUE, alpha=.5, types=NULL)
+plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, alpha=.5, types=NULL)
 
 ## ------------------------------------------------------------------------
-plotexpression(fs, y, "Clca4__chr3", n, k=25, col=fcol, cluster=FALSE, locreg=TRUE, alpha=.5, types=NULL)
+plotexpression(fs, y, "Clca4__chr3", n, col=fcol, cluster=FALSE, alpha=.5, types=NULL)
 
 ## ------------------------------------------------------------------------
-plotexpression(fs, y, g, n, k=25, col=fcol, name="Node 1", cluster=FALSE, locreg=TRUE, alpha=.5, types=sub("\\_\\d+","",n))
+plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, types=sub("\\_\\d+","",n))
 
 ## ------------------------------------------------------------------------
 thr <- .5

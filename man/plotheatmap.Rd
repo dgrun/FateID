@@ -46,7 +46,7 @@ dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean"
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)
-s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+s1d <- getsom(fs,nb=1000,alpha=.5)
 ps <- procsom(s1d,corthr=.85,minsom=3)
 plotheatmap(ps$all.e,xpart=y[n],xcol=fcol,ypart=ps$nodes,xgrid=FALSE,ygrid=TRUE,xlab=FALSE)
 }

@@ -13,7 +13,7 @@ knitr::opts_chunk$set(fig.width=8, fig.height=8)
 ```
 ## Prerequisites
 
-This manual explains how to run the FateID algorithm on sample data. FateID is a method for the quantification of cell fate bias in single cell transcriptome datasets comprising different cell types that emerge from a common progenitor. The progenitor populations are expected to be part of the dataset and the FateID algorithm was designed to learn a pre-existing bias of each progenitor cell to one or multiple alternative terminal fates. The strategy of the algorithm is to apply an iterative random forest classification [@RandomForests] in order to quantify fate bias in increasingly naive progenitors using cells that have been classified in previous iterations as training set.
+This manual explains how to run the FateID algorithm on sample data. FateID is a method for the quantification of cell fate bias in single cell transcriptome datasets comprising different cell types that emerge from a common progenitor [@FateID]. The progenitor populations are expected to be part of the dataset and the FateID algorithm was designed to learn a pre-existing bias of each progenitor cell to one or multiple alternative terminal fates. The strategy of the algorithm is to apply an iterative random forest classification [@RandomForests] in order to quantify fate bias in increasingly naive progenitors using cells that have been classified in previous iterations as training set.
 
 FateID can be directly installed from CRAN:
 ```{r eval = FALSE}
@@ -29,7 +29,7 @@ library(FateID)
 In the following sections we describe the application of FateID on sample data. 
 We do not explain all input and return arguments of the FateID functions in detail, since extensive description is available in the man pages for all of the functions.
 
-##	Input data
+## Input data
 
 The algorithm requires an expression data frame as input with cells as columns and genes as features. Column names are expected to correspond to cell IDs and row names are expected to correspond to gene IDs.
 
@@ -113,7 +113,7 @@ The core function of FateID computes the fate bias for each cell in the dataset 
 tar <- c(6,9,13)
 x <- intestine$x
 y <- intestine$y
-fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
+fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, adapt=TRUE, confidence=0.75, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
 ```
 
 Apart from the (feature selected) expression data frame `x`, the partition `y`, and the vector of target clusters `tar`, the `fateBias` function takes further arguments as input. The optional argument `z` is a cell-to-cell distance matrix utilized to identify non-classified cells in the immediate neighborhood of all cells that have been classified as one of the target clusters in the previous iteration. By default this distance matrix will be computed as `z=1-cor(x)`, but if other distance measures are preferred, a distance matrix can be provided by this argument. 
@@ -121,11 +121,15 @@ Apart from the (feature selected) expression data frame `x`, the partition `y`, 
 The FateID algorithm computed by the `fateBias` function performs an iterative calculation. It starts with a set of cells representing each target cluster. For each target cluster, the `minnr` neighboring cells with the shortest median distance to all cells in the target cluster are extracted. The ensemble of the neighboring cells of all target clusters represents the test set of the next iteration. The `minnr` parameter thus controls the step size of the algorithm. In each iteration, `minnr` cells times the number of target clusters are classified and can contribute to the training set in the next iteration.
 
 The training set of this iteration comprises all cells assigned to one of the target clusters and the response vector is given by the partition of these cells. The classification of the test set is done based on the random forest votes: If a cell receives significantly more random forest votes for one target cluster versus all other clusters (based on sampling statistics with a p-value threshold of 0.05 it is assigned to this target cluster and contributes to the training set for the next iteration. All cells without a significant fate bias towards any one of the target clusters are not incorporated into the training set for the next iteration. However, the fraction of votes, which can be interpreted as a fate probability, is recorded and stored for all cells. 
-Another important parameter controls which cells contribute to the training set for a given iteration. At most `minnrh` cells from each target cluster contribute to the training set. These cells are selected as the `minnrh` cells with the shortest distance to any cell within the current training set. This parameter controls the gene expression horizon on the differentiation trajectory taken into account for the classification of the test set. If minnrh is set to Inf then all previously classified cells with a significant fate bias for one of the target clusters contribute to the training set. However, if gene expression changes follow complex dynamics along a differentiation trajectory, it can become detrimental to include very distant cells expressing maturation markers that are not expressed during the earliest stages of differentiation. It is generally advised to confine the expression horizon to smaller values in order to increase the specificity of the algorithm. However, the training set should still be large enough to warrant a confident classification. As a rule of thumb, the minnrh parameter should be set to 10 or larger values, depending on the size and coverage of the dataset. If the input data set is large and a large number of cells are available in the dataset for all lineages covering the entire differentiation trajectory, this parameter can be increased. We recommend testing the robustness of the results to changes in minnrh. The step size minnr should be selected based on similar consideration. However, it is generally recommended to keep this number lower in order to avoid misclassification due to insufficient resolution. For the majority of datasets with several hundreds of cells we use `minnr=5` and `minnrh=10`.
+Another important parameter controls which cells contribute to the training set for a given iteration. At most `minnrh` cells from each target cluster contribute to the training set. These cells are selected as the `minnrh` cells with the shortest distance to any cell within the current training set. This parameter controls the gene expression horizon on the differentiation trajectory taken into account for the classification of the test set. If minnrh is set to Inf then all previously classified cells with a significant fate bias for one of the target clusters contribute to the training set. However, if gene expression changes follow complex dynamics along a differentiation trajectory, it can become detrimental to include very distant cells expressing maturation markers that are not expressed during the earliest stages of differentiation. It is generally advised to confine the expression horizon to smaller values in order to increase the specificity of the algorithm. However, the training set should still be large enough to warrant a confident classification. As a rule of thumb, the `minnrh` parameter should be set to 20 or larger values, depending on the size and coverage of the dataset. If the input data set is large and a large number of cells are available in the dataset for all lineages covering the entire differentiation trajectory, this parameter can be increased. We recommend testing the robustness of the results to changes in `minnrh`. The step size `minnr` should be selected based on similar consideration. However, it is generally recommended to keep this number lower in order to avoid misclassification due to insufficient resolution. For the majority of datasets with several hundreds of cells we use `minnr=5` and `minnrh=20`.
+
+FateID also permits a dynamic test set size, where the `minnr` parameter is adapted separately for each target cluster based on the classification success in the previous iteration. If `adapt=TRUE`, the number of successfully classified cells is determined in each iteration, i.e. the number of cells with a minimum fraction of votes given by the `confidence` parameter for the target cluster, which gave rise to the inclusion of the cell in the test set. Weights are then derived by dividing this number by the maximum across all target clusters after adding a pseudocount of 1. The test set size `minnr` is rescaled for each cluster by the respective weight in the next iteration. 
+
+This leads to decreasing test set sizes, and hence, slower classification, if the previous classification success of the local neighbourhood has been low. Such an adaptive scheme is important if the number cells on different branches exhibits large differences. If classification on a short branch reaches the naïve compartment, where classification succes can be expected to decrease, the progression on this branch in future iterations slows down, while classification of more mature stages on a highly populated branch still progresses at full speed.
 
 As an alternative approach the FateID algorithm offers classification based on distances to all other cells. When `use.dist` is set to `TRUE`, then the distance matrix `z` (or `1-cor(x)`) is interpreted as feature matrix.
 The remaining arguments are control parameters of the random forests algorithm and usually do not have to be adjusted.
-As outlined in the man packages of the fateBias function it returns a list of five components. The votes component is a data frame of random forest votes of all cells for each of the target clusters.  The column names are given by a concatenation of a `t` with the number of the target cluster. The row names are given by cell IDs. The probs component has the same structure, but the votes for each cell are normalized to one in order to represent fate probabilities.
+As outlined in the man packages of the `fateBias` function it returns a list of five components. The votes component is a data frame of random forest votes of all cells for each of the target clusters.  The column names are given by a concatenation of a `t` with the number of the target cluster. The row names are given by cell IDs. The probs component has the same structure, but the votes for each cell are normalized to one in order to represent fate probabilities.
 The `tr` component is a list of vectors. Each vector contains all cell IDs of cells with a significant fate bias towards the corresponding target cluster. Significant fate bias means significantly more votes for a given cluster than for any other cluster based on sampling statistics with a p-value below 0.05.
 The fourth component is vector with all cell IDs ordered by random forest iteration in which they have been classified. The last component is a list of random forest objects produced by the function randomForest from the randomForest package object for all iterations.
 
@@ -137,7 +141,7 @@ Various dimensional reduction methods are commonly used for single cell transcri
 dr  <- compdr(x, z=NULL, m=c("tsne","cmd","dm","lle"), k=c(2,3), lle.n=30, dm.sigma="local", dm.distance="euclidean", tsne.perplexity=30, seed=12345)
 ```
 
-The first two input parameters are the same as the ones to the fateBias function. The parameter `k` indicates the dimensions for which the dimensional reduction representations are computed. Typically, one wants to inspect data visually in two or three dimensions. However, it is possible to also compute dimensional reductions to more than three dimensions and inspecting the data after projecting onto a subset of dimensions. The remaining parameters are main control parameter for the various algorithms used for dimensional reduction. The function performs computation of a t-SNE map [@TSNE] using the `Rtsne` package, classical multi-dimensional scaling using `cmdscale` from the `stats` package, locally linear embedding using the `lle` function from the `lle` package, and diffusion maps [@Destiny] from the `destiny` package. To speed up the computation, only a subset of dimensionality reduction representations can be selected as input parameter `m`.
+The first two input parameters are the same as the ones to the `fateBias` function. The parameter `k` indicates the dimensions for which the dimensional reduction representations are computed. Typically, one wants to inspect data visually in two or three dimensions. However, it is possible to also compute dimensional reductions to more than three dimensions and inspecting the data after projecting onto a subset of dimensions. The remaining parameters are main control parameter for the various algorithms used for dimensional reduction. The function performs computation of a t-SNE map [@TSNE] using the `Rtsne` package, classical multi-dimensional scaling using `cmdscale` from the `stats` package, locally linear embedding using the `lle` function from the `lle` package, and diffusion maps [@Destiny] from the `destiny` package. To speed up the computation, only a subset of dimensionality reduction representations can be selected as input parameter `m`.
   
 All results can be plotted by the `plotFateMap` function.
 
@@ -206,6 +210,7 @@ As one option, we implemented a function that performs filtering by cell fate pr
 
 ```{r}
 trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
+#n   <- trc[["t6"]]
 ```
 
 If a threshold `trthr` for the minimum required cell fate probability is not given, than only cells with a significant fate bias towards a particular target cluster are used to populate the respective trajectory. The function returns a list of vectors for each target cluster containing all cells on the inferred differentiation trajectory to this cluster in pseudo-temporal order.
@@ -223,13 +228,13 @@ The `filterset` function can be used to eliminate lowly expressed genes on the t
 In the third step, a self-organizing map (SOM) of the pseudo-temporal expression profiles is computed:
 
 ```{r}
-s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+s1d <- getsom(fs,nb=1000,alpha=.5)
 ```
 
 This map provides a grouping of similar expression profiles into modules. The first input argument is again an expression data frame. In this case, we use the filtered expression table generated by the filterset function to retain only genes that are expressed on the trajectory under consideration.
-Pseudo-temporal expression profiles along the differentiation trajectory of interest are computed after smoothening either by running mean of window size `k` or, if `locreg` is `TRUE` local regression with smoothing parameter `alpha`.
+Pseudo-temporal expression profiles along the differentiation trajectory of interest are computed after smoothening  by local regression with smoothing parameter `alpha`.
 
-This function returns a list of the following three components, i. e. a som object returned by the function `som` of the package `som`, a data frame `x` with smoothened and normalized expression profiles, and a data frame `zs` of z-score transformed pseudo-temporal expression profiles.
+This function returns a list of the following three components: a `som` object returned by the function `som` of the package `som`, a data frame `x` with smoothened and normalized expression profiles, and a data frame `zs` of z-score transformed pseudo-temporal expression profiles.
 
 The SOM is then processed by another function to group the nodes of the SOM into larger modules and to produce additional z-score transformed and binned expression data frames for display:
 
@@ -237,65 +242,65 @@ The SOM is then processed by another function to group the nodes of the SOM into
 ps  <- procsom(s1d,corthr=.85,minsom=3)
 ```
 
-The first input argument is given by the SOM computed by the function `getsom`. The function has two additional input parameters to control the grouping of the SOM nodes into larger modules. The parameter corthr defines a correlation threshold. If the correlation of the z-scores of the average normalized pseudo-temporal expression profiles of neighboring nodes in the SOM exceeds this threshold genes of the neighboring nodes are merged into a larger module. Only modules with at least `minsom` genes are kept. The function returns a list of various data frames with normalized, z-score-transformed, or binned expression along with the assignment of genes to modules of the SOM (see man pages for details).
+The first input argument is given by the SOM computed by the function `getsom`. The function has two additional input parameters to control the grouping of the SOM nodes into larger modules. The parameter corthr defines a correlation threshold. If the correlation of the z-scores of the average normalized pseudo-temporal expression profiles of neighboring nodes in the SOM exceeds this threshold genes of the neighboring nodes are merged into a larger module. Only modules with at least `minsom` genes are kept. The function returns a list of various data frames with normalized, z-score-transformed, or binned expression along with the assignment of genes to modules of the SOM (see help page for details).
 
-The output of the processed SOM can be plotted using the plotheatmap function.
-First, in order to highlight the clustering partition `y` the same color scheme as used in `plotFateMap` can be generated (alternatively, both functions can be executed with an arbitrary user-defined scheme):
+The output of the processed SOM can be plotted using the `plotheatmap` function.
+First, in order to highlight the clustering partition `y`, the same color scheme as used in `plotFateMap` can be generated (alternatively, both functions can be executed with an arbitrary user-defined scheme):
 
 ```{r}
 set.seed(111111)
 fcol <- sample(rainbow(max(y)))
 ```
 
-Now, the different output data frames of the procsom function can be plotted. 
+Now, the different output data frames of the `procsom` function can be plotted. 
 
-Plot average z-score for all modules derived from the SOM:
+Average z-score for all modules derived from the SOM:
 
 ```{r}
 plotheatmap(ps$nodes.z, xpart=y[n], xcol=fcol, ypart=unique(ps$nodes), xgrid=FALSE, ygrid=TRUE, xlab=FALSE)
 ```
 
-Plot z-score profile of each gene ordered by SOM modules:
+The z-score profile of each gene ordered in SOM modules:
 
 ```{r}
 plotheatmap(ps$all.z, xpart=y[n], xcol=fcol, ypart=ps$nodes, xgrid=FALSE, ygrid=TRUE, xlab=FALSE)
 ```
 
-Plot normalized expression profile of each gene ordered by SOM modules:
+Normalized expression profile of each gene ordered by SOM modules:
 
 ```{r}
 plotheatmap(ps$all.e, xpart=y[n], xcol=fcol, ypart=ps$nodes, xgrid=FALSE, ygrid=TRUE, xlab=FALSE)
 ```
 
-Plot binarized expression profile of each gene (z-score < -1, -1 < z-score < 1, z-score > 1):
+Binarized expression profile of each gene (z-score < -1, -1 < z-score < 1, z-score > 1):
 
 ```{r}
 plotheatmap(ps$all.b, xpart=y[n], xcol=fcol, ypart=ps$nodes, xgrid=FALSE, ygrid=TRUE, xlab=FALSE)
 ```
 
 
-In order to inspect genes within individual modules of the SOM these genes can be extracted given the number of the module. The module numbers are contained in the return argument nodes of the procsom function and can be extracted, e. g. for module number 1:
+In order to inspect genes within individual modules of the SOM, these genes can be extracted given the number of the module. The module numbers are contained in the return argument nodes of the `procsom` function and can be extracted, e. g. for module number 1:
 
 ```{r}
 g <- names(ps$nodes)[ps$nodes == 1]
 ```
 
-The average pseudo-temporal expression profile of this group can be plotted by the function plotexpression:
+The average pseudo-temporal expression profile of this group can be plotted by the function `plotexpression`:
 
 ```{r}
-plotexpression(fs, y, g, n, k=25, col=fcol, name="Node 1", cluster=FALSE, locreg=TRUE, alpha=.5, types=NULL)
+plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, alpha=.5, types=NULL)
 ```
 
 In the same way it is possible to plot expression profiles of individual genes, e.g.:
 
 ```{r}
-plotexpression(fs, y, "Clca4__chr3", n, k=25, col=fcol, cluster=FALSE, locreg=TRUE, alpha=.5, types=NULL)
+plotexpression(fs, y, "Clca4__chr3", n, col=fcol, cluster=FALSE, alpha=.5, types=NULL)
 ```
 
 It is also possible to highlight the data points as specific symbols, for example reflecting batches, by using the types argument:
 
 ```{r}
-plotexpression(fs, y, g, n, k=25, col=fcol, name="Node 1", cluster=FALSE, locreg=TRUE, alpha=.5, types=sub("\\_\\d+","",n))
+plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, types=sub("\\_\\d+","",n))
 ```
 
 See man pages for detailed explanation of the input parameters.
@@ -338,7 +343,7 @@ To visualize a correlation of gene expression domain and cluster origin of the c
 gene2gene(intestine$v,intestine$y,"Muc2__chr7","Apoa1__chr9")
 ```
 
-If the fate bias towards a particular target cluster, e. g. cluster 6, should be highlighted, the output fb of the fateBias function and the column name of fb$probs corresponding to the target cluster, i. e. t6, are required as additional input parameters:
+If the fate bias towards a particular target cluster, e. g. cluster 6, should be highlighted, the output `fb` of the `fateBias` function and the column name of `fb$probs` corresponding to the target cluster, i. e. `t6`, are required as additional input parameters:
 
 ```{r} 
 gene2gene(intestine$v, intestine$y, "Muc2__chr7", "Apoa1__chr9", fb=fb, tn="t6", plotnum=FALSE)
@@ -353,7 +358,7 @@ To identify genes involved in early priming and fate decision at all stages of d
 k <- impGenes(fb,"t6")
 ```
 
-This function requires the output object of the fateBias function and the number of a target clusters, concatenated with a t as input. Additional optional arguments specify cutoffs for the importance values (see man pages). It returns a list of two objects, one data frame with mean importance values for all genes that passed the thresholds in at least of the iterations as rows and the iterations as columns, and a corresponding data frame with the standard deviation of the importance values.
+This function requires the output object of the `fateBias` function and the number of a target clusters, concatenated with a `t` as input. Additional optional arguments specify cutoffs for the importance values (see man pages). It returns a list of two objects, one data frame with mean importance values for all genes that passed the thresholds in at least of the iterations as rows and the iterations as columns, and a corresponding data frame with the standard deviation of the importance values.
 
 The function also plots a heatmap of the importance values with hierarchical clustering of the genes.
 
@@ -364,6 +369,25 @@ For bug reports and any questions related to FateID please email directly to [li
 
 ---
 references:
+
+- id: FateID
+  type: article-journal
+  author:
+  - family: Herman
+    given: J. S.
+  - family: Sagar
+    given:
+  - family: Grün
+    given: D.
+  issued:
+  - year: '2018'
+    month: '5'
+  title: '[FateID infers cell fate bias in multipotent progenitors from single-cell RNA-seq data]{.nocase}'
+  container-title: Nat. Methods
+  page: '379-386'
+  volume: '15'
+  issue: '5'
+  
 - id: Census
   type: article-journal
   author:

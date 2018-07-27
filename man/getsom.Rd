@@ -4,18 +4,14 @@
 \alias{getsom}
 \title{Topological ordering of pseudo-temporal expression profiles}
 \usage{
-getsom(x, nb = 1000, k = 5, locreg = TRUE, alpha = 0.5)
+getsom(x, nb = 1000, alpha = 0.5)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. The pseudo-temporal expression profile of each gene is defined by the order of cell IDs, i. e. columns, in \code{x}.}
 
 \item{nb}{positive integer number. Number of nodes of the self-organizing map. Default value is 1000.}
 
-\item{k}{positive integer number. Pseudo-temporal expression profiles are either derived using a running mean of expression values across the ordered cells with window-size \code{k}, or by a local regression (if \code{locreg} is \code{TRUE}). Default value is 5.}
-
-\item{locreg}{logical value. If \code{TRUE}, then pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. Default value is \code{TRUE}.}
-
-\item{alpha}{positive real number. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.}
+\item{alpha}{positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.}
 }
 \value{
 A list of the following three components:
@@ -39,7 +35,7 @@ dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean"
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)
-s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+s1d <- getsom(fs,nb=1000,alpha=.5)
 }
 
 }

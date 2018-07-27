@@ -39,7 +39,7 @@ plotFateMap(y, dr, x = NULL, g = NULL, n = NULL, prc = FALSE,
 
 \item{tp}{Transparency of points in the plot to allow better visibility of the principal curves. Default value is 1, i. e. non-transparent.}
 
-\item{...}{additional arguments to be passed to the low level function \code{principal.curve}.}
+\item{...}{additional arguments to be passed to the low level function \code{principal_curve}.}
 }
 \value{
 If \code{fb} is provided as input argument and \code{prc} equals \code{TRUE} then the output corresponds to the output of \code{prcurve}. Otherwise, only ouput is generated is \code{g} equals E. In this case a vector of fate bias entropies for all cells is given.

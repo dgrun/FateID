@@ -22,6 +22,7 @@ Reduced expression data frame with genes as rows and cells as columns in the sam
 This function discards lowly expressed genes from the expression data frame.
 }
 \examples{
+\donttest{
 x <- intestine$x
 y <- intestine$y
 v <- intestine$v
@@ -31,4 +32,5 @@ fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=N
 trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
 n <- trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)
+}
 }

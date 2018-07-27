@@ -5,7 +5,7 @@
 \title{Plotting of pseudo-temporal expression profiles}
 \usage{
 plotexpression(x, y, g, n, col = NULL, name = NULL, cluster = FALSE,
-  k = 5, locreg = FALSE, alpha = 0.5, types = NULL)
+  alpha = 0.5, types = NULL)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.}
@@ -22,11 +22,7 @@ plotexpression(x, y, g, n, col = NULL, name = NULL, cluster = FALSE,
 
 \item{cluster}{logical value. If \code{TRUE} then the partitioning along the x-axis is indicated be vertical lines representing the boundaries of all positions with a given value in \code{y}. The average position across all cells in a cluster will be indicated on the x-axis.}
 
-\item{k}{positive integer number. Pseudo-temporal expression profiles are either derived using a running mean of expression values across the ordered cells with window-size \code{k}, or by a local regression (if \code{locreg} is \code{TRUE}). Default value is 5.}
-
-\item{locreg}{logical value. If \code{TRUE}, then pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. Default value is \code{TRUE}.}
-
-\item{alpha}{positive real number. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.}
+\item{alpha}{positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.}
 
 \item{types}{optional vector with IDs for different subsets of cells in \code{y}, e. g. different batches. All cells with the same ID will be displayed by the same symbol and color. Default value is \code{NULL}}
 }
@@ -49,11 +45,11 @@ dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean"
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)
-s1d <- getsom(fs,nb=1000,k=5,locreg=TRUE,alpha=.5)
+s1d <- getsom(fs,nb=1000,alpha=.5)
 ps <- procsom(s1d,corthr=.85,minsom=3)
 # plot average profile of all genes of node 1 in the self-organizing map
 g <- names(ps$nodes)[ps$nodes == 1]
-plotexpression(v,y,g,n,k=25,col=fcol,name="Node 1",cluster=FALSE,locreg=TRUE,alpha=.5,types=NULL)
+plotexpression(v,y,g,n,col=fcol,name="Node 1",cluster=FALSE,alpha=.5,types=NULL)
 }
 
 }

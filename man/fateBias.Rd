@@ -4,8 +4,9 @@
 \alias{fateBias}
 \title{Computation of fate bias}
 \usage{
-fateBias(x, y, tar, z = NULL, minnr = 5, minnrh = 10, nbfactor = 5,
-  use.dist = FALSE, seed = NULL, nbtree = NULL, ...)
+fateBias(x, y, tar, z = NULL, minnr = NULL, minnrh = NULL, adapt = TRUE,
+  confidence = 0.75, nbfactor = 5, use.dist = FALSE, seed = NULL,
+  nbtree = NULL, ...)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.}
@@ -14,11 +15,15 @@ fateBias(x, y, tar, z = NULL, minnr = 5, minnrh = 10, nbfactor = 5,
 
 \item{tar}{vector of integers representing target cluster numbers. Each element of \code{tar} corresponds to a cluster of cells committed towards a particular mature state. One cluster per different cell lineage has to be given and is used as a starting point for learning the differentiation trajectory.}
 
-\item{z}{Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}}
+\item{z}{Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}.}
 
-\item{minnr}{integer number of cells per target cluster to be selected for classification (test set) in each round of training. For each target cluster, the \code{minnr} cells with the highest similarity to a cell in the training set are selected for classification. If \code{z} is not \code{NULL} it is used as the similarity matrix for this step. Otherwise, \code{1-cor(x)} is used. Default value is 5.}
+\item{minnr}{integer number of cells per target cluster to be selected for classification (test set) in each iteration. For each target cluster, the \code{minnr} cells with the highest similarity to a cell in the training set are selected for classification. If \code{z} is not \code{NULL} it is used as the similarity matrix for this step. Otherwise, \code{1-cor(x)} is used. Default value is \code{NULL} and \code{minnr} is estimated as the minimum of and 20 and half the median of target cluster sizes.}
 
-\item{minnrh}{integer number of cells from the training set used for classification. From each training set, the \code{minnrh} cells with the highest similarity to the training set are selected. If \code{z} is not \code{NULL} it is used as the similarity matrix for this step. Default value is 10.}
+\item{minnrh}{integer number of cells from the training set used for classification. From each training set, the \code{minnrh} cells with the highest similarity to the training set are selected. If \code{z} is not \code{NULL} it is used as the similarity matrix for this step. Default value is \code{NULL} and \code{minnrh} is estimated as the maximum of and 20 and half the median of target cluster sizes.}
+
+\item{adapt}{logical. If \code{TRUE} then the size of the test set for each target cluster is adapted based on the classification success in the previous iteration. For each target cluster, the number of successfully classified cells is determined, i.e. the number of cells with a minimum fraction of votes given by the \code{confidence} parameter for the target cluster, which gave rise to the inclusion of the cell in the test set (see \code{minnr}). Weights are then derived by dividing this number by the maximum across all clusters after adding a pseudocount of 1. The test set size \code{minnr} is rescaled for each cluster by the respective weight in the next iteration. Default is \code{TRUE}.}
+
+\item{confidence}{real number between 0 and 1. See \code{adapt} parameter. Default is 0.75.}
 
 \item{nbfactor}{positive integer number. Determines the number of trees grown for each random forest. The number of trees is given by the number of columns of th training set multiplied by \code{nbfactor}. Default value is 5.}
 
@@ -48,6 +53,6 @@ The bias is computed as the ratio of the number of random forest votes for a tra
 x <- intestine$x
 y <- intestine$y
 tar <- c(6,9,13)
-fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
+fb <- fateBias(x,y,tar,minnr=5,minnrh=20,adapt=TRUE,confidence=0.75,nbfactor=5)
 head(fb$probs)
 }

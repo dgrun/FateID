@@ -21,11 +21,11 @@ prcurve(y, fb, dr, k = 2, m = "cmd", trthr = NULL, start = NULL, ...)
 
 \item{start}{integer number representing a specified starting cluster number for all trajectories, i. e. a common progenitor cluster. The argument is optional. Default value is \code{NULL}.}
 
-\item{...}{additional arguments to be passed to the low level function \code{principal.curve}.}
+\item{...}{additional arguments to be passed to the low level function \code{principal_curve}.}
 }
 \value{
 A list of the following two components:
-  \item{pr}{A list of principal curve objects produced by the \code{principal.curve} function from the \pkg{princurve} package. Each component corresponds to one differentiation trajectory giving rise to one of the target clusters from the \code{fb} object.}
+  \item{pr}{A list of principal curve objects produced by the \code{principal_curve} function from the \pkg{princurve} package. Each component corresponds to one differentiation trajectory giving rise to one of the target clusters from the \code{fb} object.}
   \item{trc}{A list of ordered cell IDs for each trajectory in \code{pr}.}
 }
 \description{
