@@ -538,20 +538,20 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
+    pardefault <- par()
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     par(mar = c(3,5,2.5,2))
     plot(d,xlab="",ylab="",main=n,pch=20,cex=0,col="grey",axes=FALSE)
     kk <- order(v,decreasing=FALSE)
     points(d[kk,1],d[kk,2],col=ColorRamp[v[kk]],pch=20,cex=1.5)
-    par(mar = c(20,2.5,2.5,4))
-    ##par(mar = c(3,2.5,2.5,2))
-    #par(mar = c(3,1,2.5,2))
+    par(mar = c(10,2.5,2.5,4))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
           col=ColorRamp,
           xlab="",ylab="",
           xaxt="n")
     layout(1)
+    par(mar=pardefault$mar)
   }else{
     set.seed(111111)
     if ( is.null(col) ) col <- sample(rainbow(max(y)))
@@ -723,6 +723,7 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
+    pardefault <- par()
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     #par(mar = c(3,5,2.5,2))
     plot(mnd[,g1],mnd[,g2],col="grey",pch=20,cex=0, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n",main=paste("fate bias:",tn,sep=" "))
@@ -737,13 +738,14 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     }
  
     #par(mar = c(3,2.5,2.5,2))
-    par(mar = c(20,2.5,2.5,4))
+    par(mar = c(10,2.5,2.5,4))
     image(1, ColorLevels,
           matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
           col=ColorRamp,
           xlab="",ylab="",
           xaxt="n")
     layout(1)
+    par(mar=pardefault$mar)
   }else{
     plot(mnd[,g1],mnd[,g2],col=adjustcolor("lightgrey",tp),pch=20,cex=1.5, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n")
     if (plotnum == TRUE){
@@ -1109,12 +1111,15 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,ycol=NULL,ylab=TRUE,ygrid=FALSE){
   mi  <- min(x,na.rm=TRUE)
   ma  <- max(x,na.rm=TRUE)
+  pardefault <- par()
+  
   layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(5,1), heights=c(5,1))
   ColorRamp   <- rev(colorRampPalette(brewer.pal(n = 7,name = "RdYlBu"))(100))
   ColorLevels <- seq(mi, ma, length=length(ColorRamp))
   if ( mi == ma ){
     ColorLevels <- seq(0.99*mi, 1.01*ma, length=length(ColorRamp))
   }
+
   par(mar = c(3,5,2.5,2))
   image(t(as.matrix(x)),col=ColorRamp,axes=FALSE,ylim=c(-.02,1))
   box()
@@ -1145,14 +1150,15 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
     if ( ylab ) axis(2,at=tmp,labels=unique(ypart))
   }
   
-  par(mar = c(20,2,2.5,2))
-  #par(mar = c(10,1,5,1))
+  par(mar = c(10,2,2.5,2))
+
   image(1, ColorLevels,
         matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
         col=ColorRamp,
         xlab="",ylab="",
         xaxt="n")
   layout(1)
+  par(mar=pardefault$mar)
 }
 
 #' @title Plotting of pseudo-temporal expression profiles
