@@ -5,7 +5,8 @@
 \title{Plotting of pseudo-temporal expression profiles}
 \usage{
 plotexpression(x, y, g, n, col = NULL, name = NULL, cluster = FALSE,
-  alpha = 0.5, types = NULL)
+  alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE,
+  leg = TRUE)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.}
@@ -25,6 +26,14 @@ plotexpression(x, y, g, n, col = NULL, name = NULL, cluster = FALSE,
 \item{alpha}{positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.}
 
 \item{types}{optional vector with IDs for different subsets of cells in \code{y}, e. g. different batches. All cells with the same ID will be displayed by the same symbol and color. Default value is \code{NULL}}
+
+\item{cex}{size of data points. Default value is 3.}
+
+\item{ylim}{vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.}
+
+\item{map}{logical. If \code{TRUE} then data points are shown. Default value is \code{TRUE}.}
+
+\item{leg}{logical. If \code{TRUE} then axes and labels are shown. Default value is \code{TRUE}.}
 }
 \value{
 None

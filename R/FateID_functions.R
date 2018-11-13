@@ -1173,6 +1173,10 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @param cluster logical value. If \code{TRUE} then the partitioning along the x-axis is indicated be vertical lines representing the boundaries of all positions with a given value in \code{y}. The average position across all cells in a cluster will be indicated on the x-axis.
 #' @param alpha positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.
 #' @param types optional vector with IDs for different subsets of cells in \code{y}, e. g. different batches. All cells with the same ID will be displayed by the same symbol and color. Default value is \code{NULL}
+#' @param cex size of data points. Default value is 3.
+#' @param ylim vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.
+#' @param map logical. If \code{TRUE} then data points are shown. Default value is \code{TRUE}. 
+#' @param leg logical. If \code{TRUE} then axes and labels are shown. Default value is \code{TRUE}.
 #' @return None
 #' @examples
 #'
@@ -1198,49 +1202,82 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom stats loess predict
 #' @export
-plotexpression <- function(x,y,g,n,col=NULL,name=NULL,cluster=FALSE,alpha=.5,types=NULL){
-  cl <- unique(y[n])
-  set.seed(111111)
-  if ( is.null(col) ) col <- sample(rainbow(max(y)))
-
-  xlim <- c(1,length(n))
-  if ( !is.null(types) ) xlim[1] <- 1.25 * xlim[1]
-  z <- if ( length(g) == 1 ) x[g,n] else t(apply(x[g,n],2,sum))
-  if ( is.null(name) ) name <- g[1]
-  plot(1:length(n),t(z),cex=0,axes=FALSE,xlab="",ylab="Expression",main=name,xlim=xlim)
-  if ( ! is.null(types) ){
-    coloc <- rainbow(length(unique(types)))
-    syms <- c()
-    for ( i in 1:length(unique(types)) ){
-      f <- types == sort(unique(types))[i]
-      syms <- append( syms, ( (i-1) %% 25 ) + 1 )
-      points((1:length(n))[f],t(z)[f],col=coloc[i],pch=( (i-1) %% 25 ) + 1,cex=1)
+plotexpression <- function (x, y, g, n, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE, leg = TRUE){
+    
+    cl <- unique(y[n])
+    set.seed(111111)
+    if (is.null(col)) 
+        col <- sample(rainbow(max(y)))
+    xlim <- c(1, length(n))
+    if (!is.null(types)) 
+        xlim[1] <- 1.25 * xlim[1]
+    z <- if (length(g) == 1) 
+        x[g, n]
+    else t(apply(x[g, n], 2, sum))
+    if (is.null(name)) 
+        name <- g[1]
+    if ( leg ){ ylab = "Expression" } else { ylab = NA }
+    if ( leg ){ main = name } else { main = NA }
+    if ( is.null(ylim) ){
+        plot(c(1,length(n)), c(min(z),max(z)), cex = 0, axes = FALSE, xlab = "", 
+             ylab = ylab, main = main, xlim = xlim)
+    }else{
+        plot(c(1,length(n)), c(min(z),max(z)), cex = 0, axes = FALSE, xlab = "", 
+             ylab = ylab, main = main, xlim = xlim, ylim = ylim)
     }
-  }else{
-    points((1:length(n)),t(z),col="grey",pch=20,cex=3)
-  }
-  for ( i in 1:length(cl) ){
-    f <- y[n] == cl[i]
-    if ( is.null(types) ){
-      text((1:length(n))[f],t(z)[f],cl[i],font=4,col=col[cl[i]])
-    }
-    zc <- if ( i == 1 ) sum(f)   else append(zc, zc[i-1] + sum(f))
-    xc <- if ( i == 1 ) sum(f)/2 else append(xc, zc[i-1] + sum(f)/2)
-  
-    if ( cluster ) abline(v=zc[i],col="grey",lty=2)
-  }
-  u <- 1:length(n)
- 
-  v <- as.vector(t(z))
-  zc <- predict(loess( v ~ u, span=alpha ))
-  zc[zc<0] <- .1
-  lines(u,zc)
-  
-  if ( !is.null(types) ) legend("topleft", legend=sort(unique(types)), col=coloc, pch=syms)
 
-  axis(2)
-  box()
-  if ( cluster ) axis(1,at=xc,labels=cl)
+    if ( map ){
+        if (!is.null(types)) {
+            coloc <- rainbow(length(unique(types)))
+            syms <- c()
+            for (i in 1:length(unique(types))) {
+                f <- types == sort(unique(types))[i]
+                syms <- append(syms, ((i - 1)%%25) + 1)
+                points((1:length(n))[f], t(z)[f], col = coloc[i], 
+                       pch = ((i - 1)%%25) + 1, cex = 1)
+            }
+        }
+        else {
+                                        #points((1:length(n)), t(z), col = "grey", pch = 20, cex = cex)
+            for (i in 1:length(cl)) {
+                f <- y[n] == cl[i]
+                points((1:length(n))[f], t(z)[f], pch = 20, cex = cex, 
+                       col = col[cl[i]])
+            }
+            
+        }
+    }
+    if ( leg ){
+        for (i in 1:length(cl)) {
+            f <- y[n] == cl[i]
+                                        #if (is.null(types)) {
+                                        #    text((1:length(n))[f], t(z)[f], cl[i], font = 4, 
+                                        #        col = col[cl[i]])
+                                        #}
+            zc <- if (i == 1) 
+                      sum(f)
+                  else append(zc, zc[i - 1] + sum(f))
+            xc <- if (i == 1) 
+                      sum(f)/2
+                  else append(xc, zc[i - 1] + sum(f)/2)
+            if (cluster) 
+                abline(v = zc[i], col = "grey", lty = 2)
+        }
+        u <- 1:length(n)
+        v <- as.vector(t(z))
+        zc <- predict(loess(v ~ u, span = alpha))
+        zc[zc < 0] <- 0.1
+        lines(u, zc)
+        if (!is.null(types)) 
+            legend("topleft", legend = sort(unique(types)), col = coloc, 
+                   pch = syms)
+        axis(2)
+       
+        if (cluster) 
+            axis(1, at = xc, labels = cl)
+    }
+    if ( !leg ) box(col="white") else box()
+    
 }
 
 #' @title Extract genes with high importance values for random forest classification
