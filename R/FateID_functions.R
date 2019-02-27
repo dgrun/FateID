@@ -51,27 +51,28 @@ getFeat <- function(x,y,tar,fpv=.05,...){
 #' @importFrom utils head
 #' @export
 getPart <- function(x,FMarker,fthr=NULL,n=25){
-  y <- rep(1,ncol(x))
-  names(y) <- names(x)
-  if ( is.null(fthr) ){ flag <- TRUE}
-  for ( i in 1:length(FMarker)){
-    if ( flag ){
-      if ( length(FMarker[[i]]) == 1 ){
-        u <- t(x[FMarker[[i]],])
-      }else{
-        u <- apply(x[FMarker[[i]],],2,sum)
-      }
-      u <- u[order(u,decreasing=TRUE)]
-      fthr[i] <- mean(head(u,n))
+    flag <- FALSE
+    y <- rep(1,ncol(x))
+    names(y) <- names(x)
+    if ( is.null(fthr) ){ flag <- TRUE}
+    for ( i in 1:length(FMarker)){
+        if ( flag ){
+            if ( length(FMarker[[i]]) == 1 ){
+                u <- t(x[FMarker[[i]],])
+            }else{
+                u <- apply(x[FMarker[[i]],],2,sum)
+            }
+            u <- u[order(u,decreasing=TRUE)]
+            fthr[i] <- mean(head(u,n))
+        }
+        if ( length(FMarker[[i]]) == 1 ){
+            y[t(x[FMarker[[i]],]) > fthr[i]] <- i+1
+        }else{
+            y[apply(x[FMarker[[i]],],2,sum) > fthr[i]] <- i+1
+        }
     }
-    if ( length(FMarker[[i]]) == 1 ){
-      y[t(x[FMarker[[i]],]) > fthr[i]] <- i+1
-    }else{
-      y[apply(x[FMarker[[i]],],2,sum) > fthr[i]] <- i+1
-    }
-  }
-  tar <- 2:(length(FMarker) + 1 )
-  return(list(part=y,tar=tar,fthr=fthr))
+    tar <- 2:(length(FMarker) + 1 )
+    return(list(part=y,tar=tar,fthr=fthr))
 }
 
 #' @title Reclassification of cells

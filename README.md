@@ -39,3 +39,8 @@ See vignette for details and examples:
 ```
 vignette("FateID")
 ```
+
+## Reference:
+
+Herman JS, Sagar, Grün D. (2018) FateID infers cell fate bias in
+multipotent progenitors from single-cell RNA-seq data. Nat Methods. 2018 May;15(5):379-386. doi: 10.1038/nmeth.4662.
