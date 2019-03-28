@@ -25,7 +25,7 @@ plotFateMap(y, dr, x = NULL, g = NULL, n = NULL, prc = FALSE,
 
 \item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.}
 
-\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
+\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
 
 \item{kr}{integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.}
 

@@ -1,3 +1,5 @@
+#' @import umap
+#' 
 #' @title Feature selection based on differentially expressed genes
 #'
 #' @description This function performs a feature selection based on the inference of differentially expressed genes between each target cluster and all remaining cells.
@@ -53,7 +55,7 @@ getFeat <- function(x,y,tar,fpv=.05,...){
 getPart <- function(x,FMarker,fthr=NULL,n=25){
     flag <- FALSE
     y <- rep(1,ncol(x))
-    names(y) <- names(x)
+    names(y) <- colnames(x)
     if ( is.null(fthr) ){ flag <- TRUE}
     for ( i in 1:length(FMarker)){
         if ( flag ){
@@ -288,7 +290,7 @@ fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence
     rfl[[i]] <- rf
     # update probability matrix based on random forest votes for test set
     tv <- as.data.frame(rf$test$votes)
-    names(tv) <- paste("t",colnames(tv),sep="")
+    colnames(tv) <- paste("t",colnames(tv),sep="")
     for ( np in colnames(probs) ){
       if ( ! np %in% colnames(tv) ){
         tv[,np] <- rep(0,nrow(tv))
@@ -311,7 +313,7 @@ fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence
         weights <- weights/max(weights) 
     }
     # update trajectories with cells that exhibit significant bias
-    for ( k in names(votes)){
+    for ( k in colnames(votes)){
       b <- bias(tvn)
       tr[[k]] <- append(tr[[k]],rownames(tvn)[b$bias[,k] > 1 & b$pv < .05])
     }
@@ -329,21 +331,23 @@ bias <- function(tvn){
 
 #' @title Computation of dimensional reduction representations
 #'
-#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, diffusion maps 
+#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, diffusion maps, umap 
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
 #' @param z Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}
-#' @param m a vector of dimensional reduction representations to be computed. By default, the following representations are computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map). The default value of m is \code{c("lle","cmd","dm","tsne")}. Any subset of these methods can be selected.
+#' @param m a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.
 #' @param k vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{c(2,3)}.
 #' @param lle.n integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.
 #' @param dm.sigma parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is 1000.
 #' @param dm.distance parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is \code{euclidean}.
 #' @param tsne.perplexity positive number. Perplexity used in the t-SNE computation. Default value is 30.
+#' @param umap.pars umap parameters. See \pkg{umap} package, \code{umap.defaults}. Default is \code{NULL} and \code{umap.defaults} are used. \code{umap.pars$input} is automatically set to \code{"dist"}, since the umap is computed for the distance object.
 #' @param seed integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the randomness of the random forest algorithm. Default is \code{NULL}
 #' @return A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
 #'   \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
 #'   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
 #'   \item{dm}{diffusion map computed by the \code{DiffusionMap} function of the \pkg{destiny} package.}
 #'   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
+#'   \item{umap}{umap computed by the \code{umap} function of the \pkg{umap} package.}
 #'
 #' Component names of the second dimension are a concatenation of a capital D and an integer number of the dimension. There is one component for each dimension in \code{k}.
 #' @examples
@@ -356,7 +360,7 @@ bias <- function(tvn){
 #' @importFrom lle lle
 #' @importFrom Rtsne Rtsne
 #' @export
-compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle"),k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,seed=12345){
+compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,umap.pars=NULL,seed=12345){
   if (!is.null(seed) ) set.seed(seed)
 
   dr <- list()
@@ -365,7 +369,9 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle"),k=c(2,3),lle.n=30,dm.si
   # create cell-to-cell distances if not supplied
   di <- if ( is.null(z) )  1 - cor(x) else as.matrix(z)
 
- 
+  if ( is.null(umap.pars) ) umap.pars <- umap.defaults
+  umap.pars$input <- "dist"
+  
   # calculate diffusion map
   if ( "dm" %in% m ) x <- destiny::DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
 
@@ -377,6 +383,8 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle"),k=c(2,3),lle.n=30,dm.si
     if ( "cmd" %in% m ) dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
     if ( "dm" %in% m ) dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
     if ( "tsne" %in% m ) dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
+    umap.pars$n_components <- j
+    if ( "umap" %in% m ) dr[["umap"]][[jn]] <- as.data.frame( umap(di,config=umap.pars)$layout ) 
   }
 
    return(dr)
@@ -389,7 +397,7 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle"),k=c(2,3),lle.n=30,dm.si
 #' @param fb fateBias object returned by the function \code{fateBias}.
 #' @param dr list of dimensional reduction representations returned by the function \code{compdr}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param trthr real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the computation of the principal curve. If \code{NULL} then only cells with a significant bias >1 are included for each trajectory. The bias is computed as the ratio of the number of votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Default value is \code{NULL}.
 #' @param start integer number representing a specified starting cluster number for all trajectories, i. e. a common progenitor cluster. The argument is optional. Default value is \code{NULL}.
 #' @param  ... additional arguments to be passed to the low level function \code{principal_curve}.
@@ -414,7 +422,7 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
   pr <- list()
   
   # calculate principal curve for each trajectory
-  for ( j in names(fb$votes) ){
+  for ( j in colnames(fb$votes) ){
     # infer starting curve if starting clusters are given (start)
     if ( ! is.null(start) ){
       if ( !is.null(trthr) ){
@@ -493,7 +501,7 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
 #' @export
 dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
   trc <- list()
-  for ( j in names(fb$probs) ){
+  for ( j in colnames(fb$probs) ){
     if ( ! is.null(trthr) ){
       probs <- fb$probs
       n  <- rownames(probs)[probs[,j] > trthr]
@@ -606,7 +614,7 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @param prc logical. If \code{TRUE}, then a principal curve is computed and returned. Default is \code{FALSE}.
 #' @param logsc logical. If \code{TRUE}, then gene expression of fate bias probabilities are plotted on a log2 scale. Default value is \code{FALSE}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param kr integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
 #' @param fb fateBias object returned by the function \code{fateBias}. If \code{fb} is provided, then a principal curve is computed and shown in the plot. Default value is \code{NULL}. The curve is only displayed if \code{g} equal \code{NULL}.
@@ -1084,7 +1092,8 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 #' @param ypart optional vector with integer values indicating partitioning of the data points along the y-axis. For instance, \code{ypart} can be the assignment of gene IDs to nodes of a sel-organizing map. The order of the components has to be the same as for the rows in \code{x}. Default value is \code{NULL}.
 #' @param ycol optional vector with valid color names. The number of components has to be equal to the number of different values on \code{ypart}. If provided, these colors are used to highlight partitioning along the y-axis based on \code{ypart}. Default value is \code{NULL}.
 #' @param ylab logical value. If \code{TRUE} then the average position is indicated for each partition value along the y-axis. Default value is \code{TRUE}.
-#' @param ygrid logical value. If \code{TRUE} then the partitioning along the y-axis is indicated by horizontal lines representing the boundaries of all positions with a given value in \code{ypart}. 
+#' @param ygrid logical value. If \code{TRUE} then the partitioning along the y-axis is indicated by horizontal lines representing the boundaries of all positions with a given value in \code{ypart}.
+#' @param cex positive real number. Size of axis labels. Default is 1.
 #' @return None
 #' @examples
 #'
@@ -1109,7 +1118,7 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 #' @importFrom graphics layout plot points text image abline axis box legend lines par rect
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,ycol=NULL,ylab=TRUE,ygrid=FALSE){
+plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,ycol=NULL,ylab=TRUE,ygrid=FALSE,cex=1){
   mi  <- min(x,na.rm=TRUE)
   ma  <- max(x,na.rm=TRUE)
   pardefault <- par()
@@ -1136,7 +1145,7 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
           delta <- 0.5/(length(xpart) - 1)
           if (xgrid & max(ol) < 1) abline(v = max(ol) + delta, col = "grey", lty = 2)
       }
-      if (xlab) axis(1, at = tmp, labels = unique(xpart))
+      if (xlab) axis(1, at = tmp, labels = unique(xpart),cex.axis=cex)
   }
   set.seed(20)
   if ( !is.null(ypart) ){
@@ -1148,7 +1157,7 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
       delta <- .5/(length(ypart) - 1)
       if ( ygrid & max(ol) < 1) abline(a=max(ol) + delta,b=0,col="grey",lty=2)
     }
-    if ( ylab ) axis(2,at=tmp,labels=unique(ypart))
+    if ( ylab ) axis(2,at=tmp,labels=unique(ypart),cex.axis=cex,las=1)
   }
   
   par(mar = c(10,2,2.5,2))

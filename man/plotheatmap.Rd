@@ -5,7 +5,7 @@
 \title{Heatmap of expression profiles}
 \usage{
 plotheatmap(x, xpart = NULL, xcol = NULL, xlab = TRUE, xgrid = FALSE,
-  ypart = NULL, ycol = NULL, ylab = TRUE, ygrid = FALSE)
+  ypart = NULL, ycol = NULL, ylab = TRUE, ygrid = FALSE, cex = 1)
 }
 \arguments{
 \item{x}{data frame with input data to show. Columns will be displayed on the x-axis and rows on the y-axis in the order given in \code{x}. For example, columns can correspond to cells in pseudo-temporal order and rows contain gene expression, i. e. rows can represent pseudo-temporal gene expression profiles.}
@@ -25,6 +25,8 @@ plotheatmap(x, xpart = NULL, xcol = NULL, xlab = TRUE, xgrid = FALSE,
 \item{ylab}{logical value. If \code{TRUE} then the average position is indicated for each partition value along the y-axis. Default value is \code{TRUE}.}
 
 \item{ygrid}{logical value. If \code{TRUE} then the partitioning along the y-axis is indicated by horizontal lines representing the boundaries of all positions with a given value in \code{ypart}.}
+
+\item{cex}{positive real number. Size of axis labels. Default is 1.}
 }
 \value{
 None
