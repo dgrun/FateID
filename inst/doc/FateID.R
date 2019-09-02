@@ -122,6 +122,10 @@ plotexpression(fs, y, "Clca4__chr3", n, col=fcol, cluster=FALSE, alpha=.5, types
 plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, types=sub("\\_\\d+","",n))
 
 ## ------------------------------------------------------------------------
+group <- head(g,6)
+plotexpressionProfile(fs, y, g, n, name="Node 1", cluster=FALSE)
+
+## ------------------------------------------------------------------------
 thr <- .5
 a   <- "t13"
 b   <- "t6"

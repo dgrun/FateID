@@ -305,6 +305,16 @@ plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, types=sub("\
 
 See man pages for detailed explanation of the input parameters.
 
+Finally, individual loess-smoothed profiles for a set of genes can be plotted in the same graph (after normalizing the sum of expression across all cells to one in order to display genes on the same scale):
+
+```{r}
+group <- head(g,6)
+plotexpressionProfile(fs, y, g, n, name="Node 1", cluster=FALSE)
+```
+
+See man pages for detailed explanation of the input parameters.
+
+
 ##	Differential gene expression analysis
 
 Together with FateID a function for differential gene expression analysis is provided. This function implements an approach similar to DESeq [@DESeq] by which negative binomial distributions are fitted to transcript counts in two populations, representing, for instance, two different cell types. By default, the function should be executed on normalized data and estimates the dispersion parameter from the polynomial fit of the log-transformed transcript count variance as a function of the log-transformed mean expression. This is done on the input data, either after pooling cells from the two populations or on each of the populations separately. Alternatively, one can also provide a function for the variance-mean dependence as an input parameter, e. g. the dependence computed in the RaceID2 [@StemID] outlier identification. As another option, the function can also execute a standard DESeq2 [@DESeq2] differential expression analysis.

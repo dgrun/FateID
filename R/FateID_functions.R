@@ -1173,11 +1173,12 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 
 #' @title Plotting of pseudo-temporal expression profiles
 #'
-#' @description This function allows plotting pseudo-temporal expression profiles for single genes or groups of genes.
+#' @description This function allows plotting pseudo-temporal expression profiles for single genes or groups of genes. 
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.
 #' @param y clustering partition. A vector with an integer cluster number for each cell. The order of the cells has to be the same as for the columns of \code{x}.
-#' @param g a gene ID corresponding to one of the rownames of \code{x}. In the latter case, the input argument \code{x} needs to be provided. A vector of gene IDs can also be provided. In this case, the aggregated expression across all gene IDs is plotted.
+#' @param g a gene ID corresponding to one of the rownames of \code{x}. It can also be a vector of gene IDs. In this case, the aggregated expression across all gene IDs is plotted.
 #' @param n ordered vector of cell IDs to be included. Cell IDs need to be column names of \code{x}.
+#' @param logsc logical value. If \code{TRUE}, then log2-transformed values are plotted. Default is \code{FALSE} and untransformed values are plotted.
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
 #' @param name optional character string. This argument corresponds to a title for the plot. Default value is \code{NULL}. If not provided, and \code{g} is given, then \code{name} will equal \code{g} or \code{g[1]}, respectively, if \code{g} is a vector of gene IDs.
 #' @param cluster logical value. If \code{TRUE} then the partitioning along the x-axis is indicated be vertical lines representing the boundaries of all positions with a given value in \code{y}. The average position across all cells in a cluster will be indicated on the x-axis.
@@ -1212,7 +1213,12 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom stats loess predict
 #' @export
-plotexpression <- function (x, y, g, n, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE, leg = TRUE){
+plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE, leg = TRUE){
+
+    if ( logsc ){
+        if ( min(x) == 0 ) x <- x + .1
+        x <- log2(x)
+    }
     
     cl <- unique(y[n])
     set.seed(111111)
@@ -1226,7 +1232,12 @@ plotexpression <- function (x, y, g, n, col = NULL, name = NULL, cluster = FALSE
     else t(apply(x[g, n], 2, sum))
     if (is.null(name)) 
         name <- g[1]
-    if ( leg ){ ylab = "Expression" } else { ylab = NA }
+    if ( leg ){
+        ylab = "expression"
+        if ( logsc ) ylab <- "log2 expression"
+    } else {
+        ylab = NA
+    }
     if ( leg ){ main = name } else { main = NA }
     if ( is.null(ylim) ){
         plot(c(1,length(n)), c(min(z),max(z)), cex = 0, axes = FALSE, xlab = "", 
@@ -1276,7 +1287,7 @@ plotexpression <- function (x, y, g, n, col = NULL, name = NULL, cluster = FALSE
         u <- 1:length(n)
         v <- as.vector(t(z))
         zc <- predict(loess(v ~ u, span = alpha))
-        zc[zc < 0] <- 0.1
+        if ( ! logsc ) zc[zc < 0] <- 0
         lines(u, zc)
         if (!is.null(types)) 
             legend("topleft", legend = sort(unique(types)), col = coloc, 
@@ -1288,6 +1299,98 @@ plotexpression <- function (x, y, g, n, col = NULL, name = NULL, cluster = FALSE
     }
     if ( !leg ) box(col="white") else box()
     
+}
+
+#' @title Plotting smoothed pseudo-temporal expression profiles for groups of genes
+#'
+#' @description This function allows plotting loess-smoothed pseudo-temporal expression profiles for groups of genes. To display gene expression profiles on the same scale, row sums are normalized to one.
+#' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.
+#' @param y clustering partition. A vector with an integer cluster number for each cell. The order of the cells has to be the same as for the columns of \code{x}.
+#' @param g a gene ID corresponding to one of the rownames of \code{x}. It can also be vector of gene IDs. In this case, a separate profile is plotted for each gene in \code{g}.
+#' @param n ordered vector of cell IDs to be included. Cell IDs need to be column names of \code{x}.
+#' @param logsc logical value. If \code{TRUE}, then log2-transformed values are plotted. Default is \code{FALSE} and untransformed values are plotted.
+#' @param col optional vector of valid color names used for the profiles of all genes in \code{g}. Default value is \code{NULL}.
+#' @param name optional character string. This argument corresponds to a title for the plot. Default value is \code{NULL}. If not provided, and \code{g} is given, then \code{name} will equal \code{g} or \code{g[1]}, respectively, if \code{g} is a vector of gene IDs.
+#' @param cluster logical value. If \code{TRUE} then the partitioning along the x-axis is indicated be vertical lines representing the boundaries of all positions with a given value in \code{y}. The average position across all cells in a cluster will be indicated on the x-axis.
+#' @param alpha positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.
+#' @param lwd line width of profiles. Default value is 1.
+#' @param ylim vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.
+#' @return None
+#' @examples
+#'
+#' \donttest{
+#' x <- intestine$x
+#' y <- intestine$y
+#' v <- intestine$v
+#' fcol <- intestine$col
+#' tar <- c(6,9,13)
+#' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
+#' n <- pr$trc[["t6"]]
+#' fs  <- filterset(v,n,minexpr=2,minnumber=1)
+#' s1d <- getsom(fs,nb=1000,alpha=.5)
+#' ps <- procsom(s1d,corthr=.85,minsom=3)
+#' # plot average profile of all genes of node 1 in the self-organizing map
+#' g <- sample(names(ps$nodes)[ps$nodes == 1],5)
+#' plotexpressionProfile(v,y,g,n,col=fcol,name="Node 1",alpha=.2)
+#' }
+#'
+#' @importFrom grDevices rainbow colorRampPalette adjustcolor
+#' @importFrom graphics layout plot points text image abline axis box legend lines par
+#' @importFrom stats loess predict
+#' @export
+plotexpressionProfile <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, lwd = 1, ylim = NULL){
+    
+    if ( logsc ){
+        if ( min(x) == 0 ) x <- x + .1
+        x <- x/apply(x,1,sum)
+        x <- log2(x)
+    }else{
+        x <- x/apply(x,1,sum)
+    }
+    cl <- unique(y[n])
+    set.seed(111111)
+    if (is.null(col)) col <- sample(rainbow(length(n)))
+    xlim <- c(1, length(n))
+    z  <- x[g, n]
+    zc <- z
+    u <- 1:length(n)
+       
+    for ( i in 1:nrow(z) ){
+        v <- as.vector(t(z[i,]))
+        k <- predict(loess(v ~ u, span = alpha))
+        if ( ! logsc ) k[k < 0] <- 0
+        zc[i,] <- k
+    }
+    
+    if ( is.null(ylim) ) ylim <- c(min(zc),max(zc) + ( max(zc) - min(zc) ) * .25)
+    ylab <- "norm. expression"
+    if ( logsc ) ylab <- "log2 norm. expression"
+    plot(c(1,length(n)), c(min(z),max(z)), cex = 0, axes = FALSE, xlab = "", ylab = ylab, main = name, xlim = xlim, ylim = ylim)
+    for ( i in 1:nrow(zc) ){
+        lines(u,zc[i,],col=col[i],lwd=lwd)
+    }
+
+  
+    
+    for (i in 1:length(cl)) {
+        f <- y[n] == cl[i]
+        cL <- if (i == 1) 
+                  sum(f)
+              else append(cL, cL[i - 1] + sum(f))
+        xc <- if (i == 1) 
+                  sum(f)/2
+              else append(xc, cL[i - 1] + sum(f)/2)
+        if (cluster) 
+            abline(v = cL[i], col = "grey", lty = 2)
+    }
+
+    legend("topleft", legend = g, col = col, lty=rep(1,length(g))) 
+        
+    axis(2)
+    if (cluster) axis(1, at = xc, labels = cl)
+    box()    
 }
 
 #' @title Extract genes with high importance values for random forest classification
