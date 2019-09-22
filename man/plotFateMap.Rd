@@ -23,7 +23,7 @@ plotFateMap(y, dr, x = NULL, g = NULL, n = NULL, prc = FALSE,
 
 \item{logsc}{logical. If \code{TRUE}, then gene expression of fate bias probabilities are plotted on a log2 scale. Default value is \code{FALSE}.}
 
-\item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.}
+\item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Only \code{k=2} is allowed starting from version 0.1.9.}
 
 \item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
 

@@ -571,38 +571,6 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
   }
 }
 
-plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
-  plot3d(d[,1], d[,2], d[,3], xlab = "", ylab = "", zlab = "", alpha = tp, col = "grey", pch="16", type="p", size = 8, point_antialias = TRUE)
-  if ( is.null(g) ){
-    set.seed(111111)
-    if ( is.null(col) ) col <- sample(rainbow(max(y)))
-    for ( i in sort(unique(y)) ){ f <- y == i; text3d(d[f,1], d[f,2], d[f,3], rep(i,sum(f)), font=10, alpha=tp, size=9, depth_test = "always", color=col[i])}
-  }
-  if ( !is.null(g) ){
-    if ( is.null(n) ) n <- g[1]
-    l <- apply(x[g,],2,sum)
-    if (logsc) {
-      f <- l == 0
-      l <- log2(l + .01)
-      l[f] <- NA
-    }
-    mi <- min(l,na.rm=TRUE)
-    ma <- max(l,na.rm=TRUE)
-    ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
-    ColorLevels <- seq(mi, ma, length=length(ColorRamp))
-    v <- round((l - mi)/(ma - mi)*99 + 1,0)
-    kk <- order(v,decreasing=FALSE)
-    points3d(d[kk,1],d[kk,2],d[kk,3],col=ColorRamp[v[kk]],pch="16",size=8)
-    
-#    apply(cbind(d[kk,],ColorRamp[v[kk]]),1,function(x) points3d(x[1],x[2],x[3],col=x[4],pch="16",size=8))
-    image(1, ColorLevels,
-          matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
-          col=ColorRamp,
-          xlab="",ylab="",
-          xaxt="n")
-  }
-}
-
 #' @title Plot dimensional reduction representation of the expression data
 #'
 #' @description This function plots a dimensional reduction representation using the output of the \code{compdr} function as input. It allows display of the input clusters as well as color coding of fate bias probabilities and gene expression.
@@ -613,7 +581,7 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @param n optional character string. This argument corresponds to a title for 2-dimensional plots. Default value is \code{NULL}. If not provided, and \code{g} is given, then \code{n} will equal \code{g} or g[1], respectively, if g is a vector of gene IDs.
 #' @param prc logical. If \code{TRUE}, then a principal curve is computed and returned. Default is \code{FALSE}.
 #' @param logsc logical. If \code{TRUE}, then gene expression of fate bias probabilities are plotted on a log2 scale. Default value is \code{FALSE}.
-#' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
+#' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Only \code{k=2} is allowed starting from version 0.1.9.
 #' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param kr integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
@@ -643,10 +611,9 @@ plot3dmap <- function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @importFrom grDevices rainbow colorRampPalette adjustcolor
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom RColorBrewer brewer.pal
-#' @importFrom rgl plot3d points3d lines3d text3d
 #' @export
 plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="cmd",kr=NULL,col=NULL,fb=NULL,trthr=NULL,start=NULL,tp=1,...){
-  if ( is.null(kr) ) kr <- 1:min(k,3)
+  if ( is.null(kr) ) kr <- 1:min(k,2)
   d <- dr[[m]][[paste("D",k,sep="")]][,kr]
   if ( ! is.null(fb) & prc ){
     prcu <- prcurve(y=y,fb=fb,dr=dr,k=k,m=m,trthr=trthr,start=start,...)
@@ -672,15 +639,6 @@ plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="c
       legend("topleft",names(pr),lty=1:length(names(pr)))
     }
   }
-  if ( length(kr) == 3 ){
-    plot3dmap(d,x=x,y=y,g=g,n=n,col=col,tp=tp,logsc=logsc)
-    if ( is.null(g) & ! is.null(fb) & prc ){
-      for ( j in 1:length(names(pr)) ){
-        lines3d(pr[[j]]$s[pr[[j]]$ord,kr[1]],pr[[j]]$s[pr[[j]]$ord,kr[2]],pr[[j]]$s[pr[[j]]$ord,kr[3]],lwd=2,lty=j)
-      }
-    }
-  }
-  
   if ( ! is.null(fb) & prc){
     return(prcu)
   }
