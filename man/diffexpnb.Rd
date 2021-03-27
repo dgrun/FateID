@@ -4,8 +4,17 @@
 \alias{diffexpnb}
 \title{Function for differential expression analysis}
 \usage{
-diffexpnb(x, A, B, DESeq = FALSE, method = "pooled", norm = FALSE,
-  vfit = NULL, locreg = FALSE, ...)
+diffexpnb(
+  x,
+  A,
+  B,
+  DESeq = FALSE,
+  method = "pooled",
+  norm = FALSE,
+  vfit = NULL,
+  locreg = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis. This input has to be provided if \code{g} (see below) is given and corresponds to a valid gene ID, i. e. one of the rownames of \code{x}. The default value is \code{NULL}. In this case, cluster identities are highlighted in the plot.}

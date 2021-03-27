@@ -2,7 +2,7 @@
 % Please edit documentation in R/FateID_functions.R
 \name{filterset}
 \alias{filterset}
-\title{Function filtering expression data}
+\title{Function for filtering expression data}
 \usage{
 filterset(x, n = NULL, minexpr = 2, minnumber = 1)
 }

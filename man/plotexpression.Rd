@@ -4,9 +4,22 @@
 \alias{plotexpression}
 \title{Plotting of pseudo-temporal expression profiles}
 \usage{
-plotexpression(x, y, g, n, logsc = FALSE, col = NULL, name = NULL,
-  cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL,
-  map = TRUE, leg = TRUE)
+plotexpression(
+  x,
+  y,
+  g,
+  n,
+  logsc = FALSE,
+  col = NULL,
+  name = NULL,
+  cluster = FALSE,
+  alpha = 0.5,
+  types = NULL,
+  cex = 3,
+  ylim = NULL,
+  map = TRUE,
+  leg = TRUE
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.}

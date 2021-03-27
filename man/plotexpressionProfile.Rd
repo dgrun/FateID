@@ -4,8 +4,19 @@
 \alias{plotexpressionProfile}
 \title{Plotting smoothed pseudo-temporal expression profiles for groups of genes}
 \usage{
-plotexpressionProfile(x, y, g, n, logsc = FALSE, col = NULL, name = NULL,
-  cluster = FALSE, alpha = 0.5, lwd = 1, ylim = NULL)
+plotexpressionProfile(
+  x,
+  y,
+  g,
+  n,
+  logsc = FALSE,
+  col = NULL,
+  name = NULL,
+  cluster = FALSE,
+  alpha = 0.5,
+  lwd = 1,
+  ylim = NULL
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names.}

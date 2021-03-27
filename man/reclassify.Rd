@@ -4,8 +4,19 @@
 \alias{reclassify}
 \title{Reclassification of cells}
 \usage{
-reclassify(x, y, tar, z = NULL, clthr = 0.75, nbfactor = 5,
-  use.dist = FALSE, seed = NULL, nbtree = NULL, q = 0.9, ...)
+reclassify(
+  x,
+  y,
+  tar,
+  z = NULL,
+  clthr = 0.75,
+  nbfactor = 5,
+  use.dist = FALSE,
+  seed = NULL,
+  nbtree = NULL,
+  q = 0.9,
+  ...
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.}

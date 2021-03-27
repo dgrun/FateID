@@ -4,9 +4,18 @@
 \alias{compdr}
 \title{Computation of dimensional reduction representations}
 \usage{
-compdr(x, z = NULL, m = c("tsne", "cmd", "dm", "lle", "umap"), k = c(2,
-  3), lle.n = 30, dm.sigma = 1000, dm.distance = "euclidean",
-  tsne.perplexity = 30, umap.pars = NULL, seed = 12345)
+compdr(
+  x,
+  z = NULL,
+  m = c("tsne", "cmd", "dm", "lle", "umap"),
+  k = c(2, 3),
+  lle.n = 30,
+  dm.sigma = 1000,
+  dm.distance = "euclidean",
+  tsne.perplexity = 30,
+  umap.pars = NULL,
+  seed = 12345
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.}

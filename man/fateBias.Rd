@@ -4,9 +4,21 @@
 \alias{fateBias}
 \title{Computation of fate bias}
 \usage{
-fateBias(x, y, tar, z = NULL, minnr = NULL, minnrh = NULL, adapt = TRUE,
-  confidence = 0.75, nbfactor = 5, use.dist = FALSE, seed = NULL,
-  nbtree = NULL, ...)
+fateBias(
+  x,
+  y,
+  tar,
+  z = NULL,
+  minnr = NULL,
+  minnrh = NULL,
+  adapt = TRUE,
+  confidence = 0.75,
+  nbfactor = 5,
+  use.dist = FALSE,
+  seed = NULL,
+  nbtree = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.}

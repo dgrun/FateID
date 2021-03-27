@@ -4,9 +4,24 @@
 \alias{plotFateMap}
 \title{Plot dimensional reduction representation of the expression data}
 \usage{
-plotFateMap(y, dr, x = NULL, g = NULL, n = NULL, prc = FALSE,
-  logsc = FALSE, k = 2, m = "cmd", kr = NULL, col = NULL, fb = NULL,
-  trthr = NULL, start = NULL, tp = 1, ...)
+plotFateMap(
+  y,
+  dr,
+  x = NULL,
+  g = NULL,
+  n = NULL,
+  prc = FALSE,
+  logsc = FALSE,
+  k = 2,
+  m = "cmd",
+  kr = NULL,
+  col = NULL,
+  fb = NULL,
+  trthr = NULL,
+  start = NULL,
+  tp = 1,
+  ...
+)
 }
 \arguments{
 \item{y}{clustering partition. A vector with an integer cluster number for each cell. The order of the cells has to be the same as for the columns of x.}

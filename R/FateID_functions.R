@@ -1,5 +1,7 @@
 #' @import umap
-#' 
+#' @import matrixStats
+
+
 #' @title Feature selection based on differentially expressed genes
 #'
 #' @description This function performs a feature selection based on the inference of differentially expressed genes between each target cluster and all remaining cells.
@@ -373,7 +375,7 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=3
   umap.pars$input <- "dist"
   
   # calculate diffusion map
-  if ( "dm" %in% m ) x <- destiny::DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
+  if ( "dm" %in% m & requireNamespace("destiny", quietly = TRUE) ) x <- destiny::DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
 
   # compute dimensional reduction to the set of k dimensions with various methods
   for ( j in m ) dr[[j]] <- list()
@@ -500,35 +502,39 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
 #' @importFrom stats median
 #' @export
 dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
-  trc <- list()
-  for ( j in colnames(fb$probs) ){
-    if ( ! is.null(trthr) ){
-      probs <- fb$probs
-      n  <- rownames(probs)[probs[,j] > trthr]
-    }else{
-      votes <- fb$votes
-      b <- bias(votes)
-      n  <- rownames(votes)[b$bias[,j] > 1 & b$pv < .05]
-    }
-    dm <- destiny::DiffusionMap(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-    root_idx <- destiny::random_root(dm)
-    pt <- destiny::DPT(dm, root_idx)
-    pto <- pt[root_idx, ]
+    if ( requireNamespace("destiny", quietly = TRUE) ){
+        trc <- list()
+        for ( j in colnames(fb$probs) ){
+            if ( ! is.null(trthr) ){
+                probs <- fb$probs
+                n  <- rownames(probs)[probs[,j] > trthr]
+            }else{
+                votes <- fb$votes
+                b <- bias(votes)
+                n  <- rownames(votes)[b$bias[,j] > 1 & b$pv < .05]
+            }
+            dm <- destiny::DiffusionMap(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
+            root_idx <- destiny::random_root(dm)
+            pt <- destiny::DPT(dm, root_idx)
+            pto <- pt[root_idx, ]
+            
+            ##b <- pt@branch[, 1]
+            ##tip_idx <- which(b==1 & !is.na(b) & pt@tips[, 1])
+            ##pto <- pt[tip_idx, ]
     
-    #b <- pt@branch[, 1]
-    #tip_idx <- which(b==1 & !is.na(b) & pt@tips[, 1])
-    #pto <- pt[tip_idx, ]
-    
-    n <- n[order(pto,decreasing=FALSE)]
-
-    #ts <- Transitions(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-    #pt <- dpt::dpt(ts, branching = FALSE)
-    #n <- n[order(pt$DPT,decreasing=FALSE)]
+            n <- n[order(pto,decreasing=FALSE)]
+            
+            ##ts <- Transitions(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
+            ##pt <- dpt::dpt(ts, branching = FALSE)
+            ##n <- n[order(pt$DPT,decreasing=FALSE)]
   
-    if ( median((1:length(n))[y[n] == sub("t","",j)]) < median((1:length(n))[y[n] != sub("t","",j)]) ) n <- rev(n)
-    trc[[j]] <- n
-  }
-  return(trc)
+            if ( median((1:length(n))[y[n] == sub("t","",j)]) < median((1:length(n))[y[n] != sub("t","",j)]) ) n <- rev(n)
+            trc[[j]] <- n
+        }
+        return(trc)
+    }else{
+        return(NULL)
+    }
 }
 
 plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
@@ -760,26 +766,28 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
 #' @export
 diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,locreg=FALSE,...){
   if ( ! method %in% c("per-condition","pooled") ) stop("invalid method: choose pooled or per-condition")
-  x <- x[,c(A,B)]
+  x <- as.matrix(x[,c(A,B)])
+  x <- x[rowVars(x) > 0,]
   if ( DESeq ){
-    # run on sc@expdata
+    # run on object@expdata
     des <- data.frame( row.names = colnames(x), condition = factor(c( rep(1,length(A)), rep(2,length(B)) )), libType = rep("single-end", dim(x)[2]))
     cds <- DESeq2::DESeqDataSetFromMatrix(countData=round(x,0),colData=des,design =~ condition,...) 
     cds <- DESeq2::DESeq(cds,fitType='local')
     res <- DESeq2::results(cds)
     list(des=des,cds=cds,res=res)
   }else{
-    if (norm) x <- as.data.frame( t(t(x)/apply(x,2,sum))*min(apply(x,2,sum,na.rm=TRUE)) )
-    fit <- list()
-    m   <- list()
-    v   <- list()
-    for ( i in 1:2 ){
-      g <- if ( i == 1 ) A else B
-      m[[i]] <- if ( length(g) > 1 ) apply(x[,g],1,mean) else x[,g]
-      v[[i]] <- if ( length(g) > 1 ) apply(x[,g],1,var)  else apply(x,1,var)
+      colS <- colSums(x)
+      if (norm) x <- t(t(x)/colS)*min(colS)
+      fit <- list()
+      m   <- list()
+      v   <- list()
+      for ( i in 1:2 ){
+          g <- if ( i == 1 ) A else B
+          m[[i]] <- if ( length(g) > 1 ) rowMeans(x[,g]) else x[,g]
+          v[[i]] <- if ( length(g) > 1 ) rowVars(x[,g])  else x[,g]
       if ( method == "pooled"){
-        mg <- apply(x,1,mean)
-        vg <- apply(x,1,var)
+        mg <- rowMeans(x)
+        vg <- rowVars(x)
         vl <- log2(vg)
         ml <- log2(mg)
       }else{
@@ -822,8 +830,6 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
     }
     sf  <- function(x,i) x**2/(max(x + 1e-6,vf(x,i)) - x)
 
-    #psp <- 1e-99
-    #pv <- apply(data.frame(m[[1]],m[[2]]),1,function(x){ p12 <- (dnbinom(0:round(x[1]*length(A) + x[2]*length(B),0),mu=mean(x)*length(A),size=length(A)*sf(mean(x),1)) + psp)*(dnbinom(round(x[1]*length(A) + x[2]*length(B),0):0,mu=mean(x)*length(B),size=length(B)*sf(mean(x),2)) + psp); sum(p12[p12 <= p12[round(x[1]*length(A),0) + 1]])/sum(p12)} )
     pv <- apply(data.frame(m[[1]],m[[2]]),1,function(x){ p12 <- (dnbinom(0:round(x[1]*length(A) + x[2]*length(B),0),mu=mean(x)*length(A),size=length(A)*sf(mean(x),1)))*(dnbinom(round(x[1]*length(A) + x[2]*length(B),0):0,mu=mean(x)*length(B),size=length(B)*sf(mean(x),2))); if ( sum(p12) == 0 ) 0 else sum(p12[p12 <= p12[round(x[1]*length(A),0) + 1]])/(sum(p12))} )
     
     res <- data.frame(baseMean=(m[[1]] + m[[2]])/2,baseMeanA=m[[1]],baseMeanB=m[[2]],foldChange=m[[2]]/m[[1]],log2FoldChange=log2(m[[2]]/m[[1]]),pval=pv,padj=p.adjust(pv,method="BH"))
@@ -838,7 +844,7 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 
 #' @title Function for plotting differentially expressed genes
 #'
-#' @description This is a plotting function for visualizing the output of the \code{diffexpnb} function.
+#' @description This is a plotting function for visualizing the output of the \code{diffexpnb} function as MA plot.
 #' @param x output of the function \code{diffexpnb}.
 #' @param pthr real number between 0 and 1. This number represents the p-value cutoff applied for displaying differentially expressed genes. Default value is 0.05. The parameter \code{padj} (see below) determines if this cutoff is applied to the uncorrected p-value or to the Benjamini-Hochberg corrected false discovery rate.
 #' @param padj logical value. If \code{TRUE}, then genes with a Benjamini-Hochberg corrected false discovery rate lower than \code{pthr} are displayed. If \code{FALSE}, then genes with a p-value lower than \code{pthr} are displayed.
@@ -867,24 +873,26 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 #' @importFrom grDevices rainbow colorRampPalette adjustcolor
 #' @export
 plotdiffgenesnb <- function(x,pthr=.05,padj=TRUE,lthr=0,mthr=-Inf,Aname=NULL,Bname=NULL,show_names=TRUE){
-  y <- as.data.frame(x$res)
+  y <- if ( sum( names(x) == "de" ) > 0 ) as.data.frame(x$de$res) else as.data.frame(x$res)
   if ( is.null(Aname) ) Aname <- "baseMeanA"
   if ( is.null(Bname) ) Bname <- "baseMeanB"
 
   plot(log2(y$baseMean),y$log2FoldChange,pch=20,xlab=paste("log2 ( ( #mRNA[",Aname,"] + #mRNA[",Bname,"] )/2 )",sep=""),ylab=paste("log2 #mRNA[",Bname,"] - log2 #mRNA[",Aname,"]",sep=""),col="grey")
-  abline(0,0)
   if ( ! is.null(pthr) ){
-    if ( padj ) f <- y$padj < pthr else f <- y$pval < pthr
-    points(log2(y$baseMean)[f],y$log2FoldChange[f],col="red",pch=20)
+      if ( padj ) f <- y$padj < pthr else f <- y$pval < pthr
+      if ( !is.null(lthr) ) f <- f & abs( y$log2FoldChange ) > lthr
+      if ( !is.null(mthr) ) f <- f & log2(y$baseMean) > mthr
+
+      f <- f & !is.na(f)
+      points(log2(y$baseMean)[f],y$log2FoldChange[f],col="red",pch=20)
+      if ( show_names ){
+          if ( sum(f) > 0 ) text(log2(y$baseMean)[f],y$log2FoldChange[f],rownames(y)[f],cex=.5)
+      }
   }
-  if ( !is.null(lthr) ) f <- f & abs( y$log2FoldChange ) > lthr
-  if ( !is.null(mthr) ) f <- f & log2(y$baseMean) > mthr
-  if ( show_names ){
-    if ( sum(f) > 0 ) text(log2(y$baseMean)[f],y$log2FoldChange[f],rownames(y)[f],cex=.5)
-  }
+  abline(0,0)
 }
 
-#' @title Function filtering expression data
+#' @title Function for filtering expression data
 #'
 #' @description This function discards lowly expressed genes from the expression data frame.
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. 

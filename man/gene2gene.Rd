@@ -4,8 +4,18 @@
 \alias{gene2gene}
 \title{Comparative plot of the expression levels of two genes}
 \usage{
-gene2gene(x, y, g1, g2, clusters = NULL, fb = NULL, tn = NULL,
-  col = NULL, tp = 1, plotnum = TRUE)
+gene2gene(
+  x,
+  y,
+  g1,
+  g2,
+  clusters = NULL,
+  fb = NULL,
+  tn = NULL,
+  col = NULL,
+  tp = 1,
+  plotnum = TRUE
+)
 }
 \arguments{
 \item{x}{expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.}

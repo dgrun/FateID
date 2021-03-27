@@ -4,8 +4,18 @@
 \alias{plotheatmap}
 \title{Heatmap of expression profiles}
 \usage{
-plotheatmap(x, xpart = NULL, xcol = NULL, xlab = TRUE, xgrid = FALSE,
-  ypart = NULL, ycol = NULL, ylab = TRUE, ygrid = FALSE, cex = 1)
+plotheatmap(
+  x,
+  xpart = NULL,
+  xcol = NULL,
+  xlab = TRUE,
+  xgrid = FALSE,
+  ypart = NULL,
+  ycol = NULL,
+  ylab = TRUE,
+  ygrid = FALSE,
+  cex = 1
+)
 }
 \arguments{
 \item{x}{data frame with input data to show. Columns will be displayed on the x-axis and rows on the y-axis in the order given in \code{x}. For example, columns can correspond to cells in pseudo-temporal order and rows contain gene expression, i. e. rows can represent pseudo-temporal gene expression profiles.}

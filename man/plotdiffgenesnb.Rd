@@ -4,8 +4,16 @@
 \alias{plotdiffgenesnb}
 \title{Function for plotting differentially expressed genes}
 \usage{
-plotdiffgenesnb(x, pthr = 0.05, padj = TRUE, lthr = 0, mthr = -Inf,
-  Aname = NULL, Bname = NULL, show_names = TRUE)
+plotdiffgenesnb(
+  x,
+  pthr = 0.05,
+  padj = TRUE,
+  lthr = 0,
+  mthr = -Inf,
+  Aname = NULL,
+  Bname = NULL,
+  show_names = TRUE
+)
 }
 \arguments{
 \item{x}{output of the function \code{diffexpnb}.}
@@ -28,7 +36,7 @@ plotdiffgenesnb(x, pthr = 0.05, padj = TRUE, lthr = 0, mthr = -Inf,
 None
 }
 \description{
-This is a plotting function for visualizing the output of the \code{diffexpnb} function.
+This is a plotting function for visualizing the output of the \code{diffexpnb} function as MA plot.
 }
 \examples{
 
