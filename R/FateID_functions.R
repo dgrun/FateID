@@ -383,7 +383,13 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=3
     jn <- paste("D",j,sep="")
     if ( "lle" %in% m ) dr[["lle"]][[jn]] <- as.data.frame(lle(d,m=j,k=lle.n)$Y)
     if ( "cmd" %in% m ) dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
-    if ( "dm" %in% m ) dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
+    if ( "dm" %in% m ){
+        if ( requireNamespace("destiny", quietly = TRUE) ){
+            dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
+        }else{
+            dr[["dm"]][[jn]]   <- NULL
+        }
+    }
     if ( "tsne" %in% m ) dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
     umap.pars$n_components <- j
     if ( "umap" %in% m ) dr[["umap"]][[jn]] <- as.data.frame( umap(di,config=umap.pars)$layout ) 
