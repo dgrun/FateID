@@ -14,7 +14,8 @@ gene2gene(
   tn = NULL,
   col = NULL,
   tp = 1,
-  plotnum = TRUE
+  plotnum = TRUE,
+  seed = 12345
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ gene2gene(
 \item{tp}{Transparency of points in the plot. Default value is 1, i. e. non-transparent.}
 
 \item{plotnum}{logical value. If \code{TRUE}, then cluster numbers are displayed on top of the data points. Default value is \code{TRUE}.}
+
+\item{seed}{integer number. Random seed for determining colour scheme. Default is 12345.}
 }
 \value{
 None

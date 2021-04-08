@@ -10,11 +10,11 @@ biocViews:
 Imports: graphics, grDevices, lle, locfit, matrixStats, pheatmap,
         princurve, randomForest, RColorBrewer, Rtsne, som, stats, umap,
         utils
-Suggests: DESeq2, destiny, knitr, rmarkdown
+Suggests: DESeq2, knitr, rmarkdown
 VignetteBuilder: knitr
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2021-03-27 09:58:23 UTC; d.grun
+Packaged: 2021-04-06 13:45:41 UTC; d.grun

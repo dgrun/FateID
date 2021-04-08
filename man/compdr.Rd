@@ -7,11 +7,9 @@
 compdr(
   x,
   z = NULL,
-  m = c("tsne", "cmd", "dm", "lle", "umap"),
-  k = c(2, 3),
+  m = c("tsne", "cmd", "lle", "umap"),
+  k = 2,
   lle.n = 30,
-  dm.sigma = 1000,
-  dm.distance = "euclidean",
   tsne.perplexity = 30,
   umap.pars = NULL,
   seed = 12345
@@ -24,13 +22,9 @@ compdr(
 
 \item{m}{a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.}
 
-\item{k}{vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{c(2,3)}.}
+\item{k}{vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{2}.}
 
 \item{lle.n}{integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.}
-
-\item{dm.sigma}{parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is 1000.}
-
-\item{dm.distance}{parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is \code{euclidean}.}
 
 \item{tsne.perplexity}{positive number. Perplexity used in the t-SNE computation. Default value is 30.}
 
@@ -42,7 +36,6 @@ compdr(
 A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
   \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
-  \item{dm}{diffusion map computed by the \code{DiffusionMap} function of the \pkg{destiny} package.}
   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
   \item{umap}{umap computed by the \code{umap} function of the \pkg{umap} package.}
 
@@ -54,7 +47,7 @@ This function computes dimensional reduction representations to a specified numb
 \examples{
 
 x <- intestine$x
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 plot(dr[["cmd"]][["D2"]],pch=20,col="grey")
 
 }

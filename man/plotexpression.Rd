@@ -18,7 +18,9 @@ plotexpression(
   cex = 3,
   ylim = NULL,
   map = TRUE,
-  leg = TRUE
+  leg = TRUE,
+  seed = 12345,
+  ylab = NULL
 )
 }
 \arguments{
@@ -49,6 +51,10 @@ plotexpression(
 \item{map}{logical. If \code{TRUE} then data points are shown. Default value is \code{TRUE}.}
 
 \item{leg}{logical. If \code{TRUE} then axes and labels are shown. Default value is \code{TRUE}.}
+
+\item{seed}{integer number. Random seed for determining colour scheme. Default is 12345.}
+
+\item{ylab}{Optional label for the y-axis. Default is \code{NULL} and axis is labeled "norm. expression".}
 }
 \value{
 None
@@ -65,7 +71,7 @@ v <- intestine$v
 fcol <- intestine$col
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)

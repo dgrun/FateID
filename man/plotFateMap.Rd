@@ -20,6 +20,7 @@ plotFateMap(
   trthr = NULL,
   start = NULL,
   tp = 1,
+  seed = 12345,
   ...
 )
 }
@@ -54,6 +55,8 @@ plotFateMap(
 
 \item{tp}{Transparency of points in the plot to allow better visibility of the principal curves. Default value is 1, i. e. non-transparent.}
 
+\item{seed}{integer number. Random seed for determining colour scheme. Default is 12345.}
+
 \item{...}{additional arguments to be passed to the low level function \code{principal_curve}.}
 }
 \value{
@@ -71,7 +74,7 @@ v <- intestine$v
 fcol <- intestine$fcol
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 
 # plot principal curves
 pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)

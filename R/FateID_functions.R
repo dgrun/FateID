@@ -166,6 +166,7 @@ reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=N
 #' @param use.dist logical value. If \code{TRUE} then the distance matrix is used as feature matrix (i. e. \code{z} if not equal to \code{NULL} and \code{1-cor(x)} otherwise). If \code{FALSE}, gene expression values in \code{x} are used. Default is \code{FALSE}.
 #' @param seed integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the radomness of the random forest algorithm. Default is \code{NULL}
 #' @param nbtree integer value. If given, it specifies the number of trees for each random forest explicitely. Default is \code{NULL}.
+#' @param verbose logical. If \code{TRUE}, then print information to console.
 #' @param  ... additional arguments to be passed to the low level function \code{randomForest}.
 #' @details The bias is computed as the ratio of the number of random forest votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Cells are assigned to a trajectory if they exhibit a significant bias >1 for this trajectory.
 #' @return A list with the following three components:
@@ -183,16 +184,17 @@ reclassify <- function(x,y,tar,z=NULL,clthr=.75,nbfactor=5,use.dist=FALSE,seed=N
 #' @importFrom stats binom.test cor median 
 #' @importFrom utils head
 #' @export
-fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence=0.75,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL,...){
+fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence=0.75,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL,verbose=FALSE,...){
   if ( is.null(minnrh) ){
     minnrh <- max(round(median(aggregate(rep(1,sum(y %in% tar)),by=list(y[y %in% tar]),FUN=sum)[,2])/2,0),20)
   }
   if ( is.null(minnr) ){
     minnr  <- min(round(median(aggregate(rep(1,sum(y %in% tar)),by=list(y[y %in% tar]),FUN=sum)[,2])/2,0),20)
   }
-  cat("minnr:",minnr,"\n")
-  cat("minnrh:",minnrh,"\n")
-
+  if ( verbose ){
+      cat("minnr:",minnr,"\n")
+      cat("minnrh:",minnrh,"\n")
+  }
   if (!is.null(seed) ) set.seed(seed)
 
   if (!is.null(z) ) z <- as.matrix(z)
@@ -240,7 +242,7 @@ fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence
   
   while ( length(trall) < ncol(d) ){
     i <- i + 1
-    cat("test set size iteration",i,":",weights*minnr,"\n")
+    if ( verbose ) cat("test set size iteration",i,":",weights*minnr,"\n")
     # extract for each target trajectory the minnr cells from the pool of non-assigned cells closest to any of the cells on the trajectory
     u <- di[trall,colnames(d)[ ! colnames(d) %in% trall]]
     nl <- list()
@@ -272,7 +274,7 @@ fateBias <- function(x,y,tar,z=NULL,minnr=NULL,minnrh=NULL,adapt=TRUE,confidence
       trt <- append(trt,head(names(v),minnrh))
     }
     trt <- unique(trt)  
-    cat("randomforest iteration",i,"of", length(n),"cells\n")
+    if ( verbose ) cat("randomforest iteration",i,"of", length(n),"cells\n")
 
     # assign feature matrix for random forest classification
     if ( use.dist ){
@@ -337,17 +339,14 @@ bias <- function(tvn){
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
 #' @param z Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}
 #' @param m a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.
-#' @param k vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{c(2,3)}.
+#' @param k vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{2}.
 #' @param lle.n integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.
-#' @param dm.sigma parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is 1000.
-#' @param dm.distance parameter for the computation of the diffusion maps with the destiny package. See \url{https://bioconductor.org/packages/devel/bioc/html/destiny.html}. Default value is \code{euclidean}.
 #' @param tsne.perplexity positive number. Perplexity used in the t-SNE computation. Default value is 30.
 #' @param umap.pars umap parameters. See \pkg{umap} package, \code{umap.defaults}. Default is \code{NULL} and \code{umap.defaults} are used. \code{umap.pars$input} is automatically set to \code{"dist"}, since the umap is computed for the distance object.
 #' @param seed integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the randomness of the random forest algorithm. Default is \code{NULL}
 #' @return A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
 #'   \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
 #'   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
-#'   \item{dm}{diffusion map computed by the \code{DiffusionMap} function of the \pkg{destiny} package.}
 #'   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
 #'   \item{umap}{umap computed by the \code{umap} function of the \pkg{umap} package.}
 #'
@@ -355,14 +354,14 @@ bias <- function(tvn){
 #' @examples
 #'
 #' x <- intestine$x
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' plot(dr[["cmd"]][["D2"]],pch=20,col="grey")
 #'
 #' @importFrom stats cor cmdscale as.dist
 #' @importFrom lle lle
 #' @importFrom Rtsne Rtsne
 #' @export
-compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30,umap.pars=NULL,seed=12345){
+compdr <- function(x,z=NULL,m=c("tsne","cmd","lle","umap"),k=2,lle.n=30,tsne.perplexity=30,umap.pars=NULL,seed=12345){
   if (!is.null(seed) ) set.seed(seed)
 
   dr <- list()
@@ -374,22 +373,12 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=3
   if ( is.null(umap.pars) ) umap.pars <- umap.defaults
   umap.pars$input <- "dist"
   
-  # calculate diffusion map
-  if ( "dm" %in% m & requireNamespace("destiny", quietly = TRUE) ) x <- destiny::DiffusionMap(d,sigma = dm.sigma, distance = dm.distance)
-
   # compute dimensional reduction to the set of k dimensions with various methods
   for ( j in m ) dr[[j]] <- list()
   for ( j in k){
     jn <- paste("D",j,sep="")
     if ( "lle" %in% m ) dr[["lle"]][[jn]] <- as.data.frame(lle(d,m=j,k=lle.n)$Y)
     if ( "cmd" %in% m ) dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
-    if ( "dm" %in% m ){
-        if ( requireNamespace("destiny", quietly = TRUE) ){
-            dr[["dm"]][[jn]]   <- as.data.frame(x@eigenvectors[,1:j])
-        }else{
-            dr[["dm"]][[jn]]   <- NULL
-        }
-    }
     if ( "tsne" %in% m ) dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
     umap.pars$n_components <- j
     if ( "umap" %in% m ) dr[["umap"]][[jn]] <- as.data.frame( umap(di,config=umap.pars)$layout ) 
@@ -420,7 +409,7 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","dm","lle","umap"),k=c(2,3),lle.n=3
 #' y <- intestine$y
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.25,start=NULL)
 #'
 #' @importFrom stats median
@@ -483,68 +472,7 @@ prcurve <- function(y,fb,dr,k=2,m="cmd",trthr=NULL,start=NULL,...){
   return(list(pr=pr,trc=trc))
 }
 
-#' @title Inferenence of diffusion pseudotime (DPT) for all cells on a differentiation trajectory
-#'
-#' @description This function computes a pseudo-temporal ordering of cells reflecting the differentiation projects by using the \code{DPT} function from the \code{destiny} package.
-#' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
-#' @param y clustering partition. A vector with an integer cluster number for each cell. The order of the cells has to be the same as for the columns of x.
-#' @param fb fateBias object returned by the function \code{fateBias}.
-#' @param trthr real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the derivation of the diffusion pseudotime. If \code{NULL} then only cells with a signifcant fate bias >1 are included for each trajectory. Default value is \code{NULL}.
-#' @param distance parameter for the computation of the underlying diffusion map computed by the function \code{DiffusionMap} from the \pkg{destiny} package. Default value is \code{euclidean}.
-#' @param sigma parameter for the computation of the underlying diffusion map computed by the function \code{DiffusionMap} from the \pkg{destiny} package. Default value is 1000.
-#' @param  ... additional arguments to be passed to the low level function \code{DiffusionMap}.
-#' @details The function orders all cells assigned to a differentiation trajectory with a significant fate bias >1 or a probability greater \code{trthr} for a trajectory, respectively, by diffusion pseudotime.
-#' @return trc A list of ordered cell IDs for each trajectory giving rise to one of the targer clusters in \code{fb}
-#' @examples
-#'
-#' \donttest{
-#' x <- intestine$x
-#' y <- intestine$y
-#' tar <- c(6,9,13)
-#' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
-#' trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
-#' }
-#' @importFrom stats median
-#' @export
-dptTraj <- function(x,y,fb,trthr=NULL,distance="euclidean",sigma=1000,...){
-    if ( requireNamespace("destiny", quietly = TRUE) ){
-        trc <- list()
-        for ( j in colnames(fb$probs) ){
-            if ( ! is.null(trthr) ){
-                probs <- fb$probs
-                n  <- rownames(probs)[probs[,j] > trthr]
-            }else{
-                votes <- fb$votes
-                b <- bias(votes)
-                n  <- rownames(votes)[b$bias[,j] > 1 & b$pv < .05]
-            }
-            dm <- destiny::DiffusionMap(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-            root_idx <- destiny::random_root(dm)
-            pt <- destiny::DPT(dm, root_idx)
-            pto <- pt[root_idx, ]
-            
-            ##b <- pt@branch[, 1]
-            ##tip_idx <- which(b==1 & !is.na(b) & pt@tips[, 1])
-            ##pto <- pt[tip_idx, ]
-    
-            n <- n[order(pto,decreasing=FALSE)]
-            
-            ##ts <- Transitions(as.matrix(t(x[,n])),distance=distance,sigma=sigma,...)
-            ##pt <- dpt::dpt(ts, branching = FALSE)
-            ##n <- n[order(pt$DPT,decreasing=FALSE)]
-  
-            if ( median((1:length(n))[y[n] == sub("t","",j)]) < median((1:length(n))[y[n] != sub("t","",j)]) ) n <- rev(n)
-            trc[[j]] <- n
-        }
-        return(trc)
-    }else{
-        return(NULL)
-    }
-}
-
-plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
- 
+plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE,seed=12345){
 
   if ( !is.null(g) ){
     if ( is.null(n) ) n <- g[1]
@@ -559,7 +487,10 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
     ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
-    pardefault <- par()
+
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+    
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     par(mar = c(3,5,2.5,2))
     plot(d,xlab="",ylab="",main=n,pch=20,cex=0,col="grey",axes=FALSE)
@@ -572,9 +503,8 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
           xlab="",ylab="",
           xaxt="n")
     layout(1)
-    par(mar=pardefault$mar)
   }else{
-    set.seed(111111)
+    set.seed(seed)
     if ( is.null(col) ) col <- sample(rainbow(max(y)))
     plot(d,xlab="",ylab="",pch=20,cex=1.5,col=adjustcolor("lightgrey",tp),axes=FALSE)
     for ( i in 1:max(y) ){
@@ -601,6 +531,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @param trthr real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the computation of the principal curve. If \code{NULL} then only cells with a significant bias >1 are included for each trajectory. The bias is computed as the ratio of the number of votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Default value is \code{NULL}.
 #' @param start integer number representing a specified starting cluster number for all trajectories, i. e. a common progenitor cluster. The argument is optional. Default value is \code{NULL}.
 #' @param tp Transparency of points in the plot to allow better visibility of the principal curves. Default value is 1, i. e. non-transparent.
+#' @param seed integer number. Random seed for determining colour scheme. Default is 12345.
 #' @param  ... additional arguments to be passed to the low level function \code{principal_curve}.
 #' @return If \code{fb} is provided as input argument and \code{prc} equals \code{TRUE} then the output corresponds to the output of \code{prcurve}. Otherwise, only ouput is generated is \code{g} equals E. In this case a vector of fate bias entropies for all cells is given.
 #' @examples
@@ -612,7 +543,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' fcol <- intestine$fcol
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #'
 #' # plot principal curves
 #' pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
@@ -624,7 +555,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE){
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="cmd",kr=NULL,col=NULL,fb=NULL,trthr=NULL,start=NULL,tp=1,...){
+plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="cmd",kr=NULL,col=NULL,fb=NULL,trthr=NULL,start=NULL,tp=1,seed=12345,...){
   if ( is.null(kr) ) kr <- 1:min(k,2)
   d <- dr[[m]][[paste("D",k,sep="")]][,kr]
   if ( ! is.null(fb) & prc ){
@@ -643,7 +574,7 @@ plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="c
     }
   }
   if ( length(kr) == 2 ){
-    plot2dmap(d,x=x,y=y,g=g,n=n,col=col,tp=tp,logsc=logsc)
+    plot2dmap(d,x=x,y=y,g=g,n=n,col=col,tp=tp,logsc=logsc,seed=seed)
     if ( is.null(g) & ! is.null(fb) & prc){
       for ( j in 1:length(names(pr)) ){
         lines(pr[[j]]$s[pr[[j]]$ord,kr[1]],pr[[j]]$s[pr[[j]]$ord,kr[2]],lwd=2,lty=j)
@@ -674,6 +605,7 @@ plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="c
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
 #' @param tp Transparency of points in the plot. Default value is 1, i. e. non-transparent.
 #' @param plotnum logical value. If \code{TRUE}, then cluster numbers are displayed on top of the data points. Default value is \code{TRUE}.
+#' @param seed integer number. Random seed for determining colour scheme. Default is 12345.
 #' @return None
 #' @examples
 #' x <- intestine$x
@@ -689,8 +621,8 @@ plotFateMap <- function(y,dr,x=NULL,g=NULL,n=NULL,prc=FALSE,logsc=FALSE,k=2,m="c
 #' @importFrom graphics layout plot points text image
 #' @importFrom RColorBrewer brewer.pal
 #' @export
-gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plotnum=TRUE){
-  set.seed(111111)
+gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plotnum=TRUE,seed=12345){
+  set.seed(seed)
   if ( is.null(col) ) col <- sample(rainbow(max(y)))
   if ( is.null(clusters) ) clusters <- sort(unique(y))
   clust_n <- y[y %in% clusters]
@@ -702,7 +634,9 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
     ColorRamp <- colorRampPalette(rev(brewer.pal(n = 7,name = "RdYlBu")))(100)
     ColorLevels <- seq(mi, ma, length=length(ColorRamp))
     v <- round((l - mi)/(ma - mi)*99 + 1,0)
-    pardefault <- par()
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+ 
     layout(matrix(data=c(1,3,2,4), nrow=2, ncol=2), widths=c(5,1,5,1), heights=c(5,1,1,1))
     #par(mar = c(3,5,2.5,2))
     plot(mnd[,g1],mnd[,g2],col="grey",pch=20,cex=0, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n",main=paste("fate bias:",tn,sep=" "))
@@ -724,7 +658,6 @@ gene2gene <- function(x,y,g1,g2,clusters=NULL,fb=NULL,tn=NULL,col=NULL,tp=1,plot
           xlab="",ylab="",
           xaxt="n")
     layout(1)
-    par(mar=pardefault$mar)
   }else{
     plot(mnd[,g1],mnd[,g2],col=adjustcolor("lightgrey",tp),pch=20,cex=1.5, xlab=g1, ylab=g2, xlim=c(0,max(mnd[,g1])*1.1),ylim=c(0,max(mnd[,g2])*1.1),bty="n")
     if (plotnum == TRUE){
@@ -859,6 +792,7 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 #' @param Aname name of expression set \code{A}, which was used as input to \code{diffexpnb}. If provided, this name is used in the axis labels. Default value is \code{NULL}.
 #' @param Bname name of expression set \code{B}, which was used as input to \code{diffexpnb}. If provided, this name is used in the axis labels. Default value is \code{NULL}.
 #' @param show_names logical value. If \code{TRUE} then gene names displayed for differentially expressed genes. Default value is \code{FALSE}.
+#' @param ... Additional arguments for function \code{plot}.
 #' @return None
 #' @examples
 #'
@@ -878,12 +812,12 @@ diffexpnb <- function(x,A,B,DESeq=FALSE,method="pooled",norm=FALSE,vfit=NULL,loc
 #'
 #' @importFrom grDevices rainbow colorRampPalette adjustcolor
 #' @export
-plotdiffgenesnb <- function(x,pthr=.05,padj=TRUE,lthr=0,mthr=-Inf,Aname=NULL,Bname=NULL,show_names=TRUE){
+plotdiffgenesnb <- function(x,pthr=.05,padj=TRUE,lthr=0,mthr=-Inf,Aname=NULL,Bname=NULL,show_names=TRUE,...){
   y <- if ( sum( names(x) == "de" ) > 0 ) as.data.frame(x$de$res) else as.data.frame(x$res)
-  if ( is.null(Aname) ) Aname <- "baseMeanA"
-  if ( is.null(Bname) ) Bname <- "baseMeanB"
+  if ( is.null(Aname) ) Aname <- "A"
+  if ( is.null(Bname) ) Bname <- "B"
 
-  plot(log2(y$baseMean),y$log2FoldChange,pch=20,xlab=paste("log2 ( ( #mRNA[",Aname,"] + #mRNA[",Bname,"] )/2 )",sep=""),ylab=paste("log2 #mRNA[",Bname,"] - log2 #mRNA[",Aname,"]",sep=""),col="grey")
+  plot(log2(y$baseMean),y$log2FoldChange,pch=20,xlab=paste("log2 ( ( mean[",Aname,"] + mean[",Bname,"] )/2 )",sep=""),ylab=paste("log2 mean[",Bname,"] - log2 mean[",Aname,"]",sep=""),col="grey",...)
   if ( ! is.null(pthr) ){
       if ( padj ) f <- y$padj < pthr else f <- y$pval < pthr
       if ( !is.null(lthr) ) f <- f & abs( y$log2FoldChange ) > lthr
@@ -906,18 +840,6 @@ plotdiffgenesnb <- function(x,pthr=.05,padj=TRUE,lthr=0,mthr=-Inf,Aname=NULL,Bna
 #' @param minexpr  positive real number. This is the minimum expression required for at least \code{minnumber} cells. All genes that do not fulfill this criterion are removed. The default value is 2.
 #' @param minnumber positive integer number. This is the minimum number of cells in which a gene needs to be expressed at least at a level of \code{minexpr}. All genes that do not fulfill this criterion are removed. The default value is 1.
 #' @return Reduced expression data frame with genes as rows and cells as columns in the same order as in \code{n}.
-#' @examples
-#' \donttest{
-#' x <- intestine$x
-#' y <- intestine$y
-#' v <- intestine$v
-#'
-#' tar <- c(6,9,13)
-#' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
-#' n <- trc[["t6"]]
-#' fs  <- filterset(v,n,minexpr=2,minnumber=1)
-#' }
 #' @export
 filterset <- function(x,n=NULL,minexpr=2,minnumber=1){
   if ( is.null(n) ) n <- colnames(x)
@@ -943,7 +865,7 @@ filterset <- function(x,n=NULL,minexpr=2,minnumber=1){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -986,7 +908,7 @@ getsom <- function(x,nb=1000,alpha=.5){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1077,7 +999,7 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1093,8 +1015,10 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,ycol=NULL,ylab=TRUE,ygrid=FALSE,cex=1){
   mi  <- min(x,na.rm=TRUE)
   ma  <- max(x,na.rm=TRUE)
-  pardefault <- par()
-  
+
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+ 
   layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(5,1), heights=c(5,1))
   ColorRamp   <- rev(colorRampPalette(brewer.pal(n = 7,name = "RdYlBu"))(100))
   ColorLevels <- seq(mi, ma, length=length(ColorRamp))
@@ -1105,7 +1029,6 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
   par(mar = c(3,5,2.5,2))
   image(t(as.matrix(x)),col=ColorRamp,axes=FALSE,ylim=c(-.02,1))
   box()
-  set.seed(20)
   if (!is.null(xpart)) {
       tmp <- c()
       width <- ( 1/length(xpart) )/2
@@ -1119,7 +1042,6 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
       }
       if (xlab) axis(1, at = tmp, labels = unique(xpart),cex.axis=cex)
   }
-  set.seed(20)
   if ( !is.null(ypart) ){
     tmp <- c()
     for ( u in unique(ypart) ){
@@ -1140,7 +1062,6 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
         xlab="",ylab="",
         xaxt="n")
   layout(1)
-  par(mar=pardefault$mar)
 }
 
 #' @title Plotting of pseudo-temporal expression profiles
@@ -1160,6 +1081,8 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @param ylim vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.
 #' @param map logical. If \code{TRUE} then data points are shown. Default value is \code{TRUE}. 
 #' @param leg logical. If \code{TRUE} then axes and labels are shown. Default value is \code{TRUE}.
+#' @param seed integer number. Random seed for determining colour scheme. Default is 12345.
+#' @param ylab Optional label for the y-axis. Default is \code{NULL} and axis is labeled "norm. expression".
 #' @return None
 #' @examples
 #'
@@ -1170,7 +1093,7 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' fcol <- intestine$col
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1185,15 +1108,14 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom stats loess predict
 #' @export
-plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE, leg = TRUE){
-
+plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, types = NULL, cex = 3, ylim = NULL, map = TRUE, leg = TRUE, seed = 12345, ylab = NULL){  
     if ( logsc ){
         if ( min(x) == 0 ) x <- x + .1
         x <- log2(x)
     }
     
     cl <- unique(y[n])
-    set.seed(111111)
+    set.seed(seed)
     if (is.null(col)) 
         col <- sample(rainbow(max(y)))
     xlim <- c(1, length(n))
@@ -1205,8 +1127,10 @@ plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, 
     if (is.null(name)) 
         name <- g[1]
     if ( leg ){
-        ylab = "expression"
-        if ( logsc ) ylab <- "log2 expression"
+        if (is.null(ylab)){
+            ylab = "expression"
+            if ( logsc ) ylab <- "log2 expression"
+        }
     } else {
         ylab = NA
     }
@@ -1287,6 +1211,8 @@ plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, 
 #' @param alpha positive real number. Pseudo-temporal expression profiles are derived by a local regression of expression values across the ordered cells using the function \code{loess} from the package \pkg{stats}. This is the parameter, which controls the degree of smoothing. Larger values return smoother profiles. Default value is 0.5.
 #' @param lwd line width of profiles. Default value is 1.
 #' @param ylim vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.
+#' @param seed integer number. Random seed for determining colour scheme. Default is 12345.
+#' @param ylab Optional label for the y-axis. Default is \code{NULL} and axis is labeled "norm. expression".
 #' @return None
 #' @examples
 #'
@@ -1297,7 +1223,7 @@ plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, 
 #' fcol <- intestine$col
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1312,8 +1238,7 @@ plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, 
 #' @importFrom graphics layout plot points text image abline axis box legend lines par
 #' @importFrom stats loess predict
 #' @export
-plotexpressionProfile <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, lwd = 1, ylim = NULL){
-    
+plotexpressionProfile <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, cluster = FALSE, alpha = 0.5, lwd = 1, ylim = NULL, seed = 12345, ylab = NULL){
     if ( logsc ){
         if ( min(x) == 0 ) x <- x + .1
         x <- x/apply(x,1,sum)
@@ -1322,7 +1247,7 @@ plotexpressionProfile <- function (x, y, g, n, logsc = FALSE, col = NULL, name =
         x <- x/apply(x,1,sum)
     }
     cl <- unique(y[n])
-    set.seed(111111)
+    set.seed(seed)
     if (is.null(col)) col <- sample(rainbow(length(n)))
     xlim <- c(1, length(n))
     z  <- x[g, n]
@@ -1337,14 +1262,14 @@ plotexpressionProfile <- function (x, y, g, n, logsc = FALSE, col = NULL, name =
     }
     
     if ( is.null(ylim) ) ylim <- c(min(zc),max(zc) + ( max(zc) - min(zc) ) * .25)
-    ylab <- "norm. expression"
-    if ( logsc ) ylab <- "log2 norm. expression"
+    if ( is.null(ylab) ){
+        ylab <- "norm. expression"
+        if ( logsc ) ylab <- "log2 norm. expression"
+    }
     plot(c(1,length(n)), c(min(z),max(z)), cex = 0, axes = FALSE, xlab = "", ylab = ylab, main = name, xlim = xlim, ylim = ylim)
     for ( i in 1:nrow(zc) ){
         lines(u,zc[i,],col=col[i],lwd=lwd)
     }
-
-  
     
     for (i in 1:length(cl)) {
         f <- y[n] == cl[i]

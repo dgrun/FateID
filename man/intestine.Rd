@@ -23,7 +23,7 @@ None
 This dataset contains gene expression values, i. e. transcript counts, of 278 intestinal epithelial cells, and additional information on different cell types in this sample.
 }
 \references{
-Grün et al. (2013) Cell Stem Cell 19(2): 266-77
-(\href{https://www.ncbi.nlm.nih.gov/pubmed/27345837}{PubMed})
+Grün et al. (2016) Cell Stem Cell 19(2): 266-77
+(\href{https://pubmed.ncbi.nlm.nih.gov/27345837/}{PubMed})
 }
 \keyword{datasets}

@@ -15,7 +15,9 @@ plotexpressionProfile(
   cluster = FALSE,
   alpha = 0.5,
   lwd = 1,
-  ylim = NULL
+  ylim = NULL,
+  seed = 12345,
+  ylab = NULL
 )
 }
 \arguments{
@@ -40,6 +42,10 @@ plotexpressionProfile(
 \item{lwd}{line width of profiles. Default value is 1.}
 
 \item{ylim}{vector of two numerical values: lower and upper limit of values shown on the y-axis. Default value is \code{NULL} and the whole range is shown.}
+
+\item{seed}{integer number. Random seed for determining colour scheme. Default is 12345.}
+
+\item{ylab}{Optional label for the y-axis. Default is \code{NULL} and axis is labeled "norm. expression".}
 }
 \value{
 None
@@ -56,7 +62,7 @@ v <- intestine$v
 fcol <- intestine$col
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,dm.sigma=1000,dm.distance="euclidean",tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 n <- pr$trc[["t6"]]
 fs  <- filterset(v,n,minexpr=2,minnumber=1)

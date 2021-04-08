@@ -2,7 +2,6 @@
 
 export(compdr)
 export(diffexpnb)
-export(dptTraj)
 export(fateBias)
 export(filterset)
 export(gene2gene)

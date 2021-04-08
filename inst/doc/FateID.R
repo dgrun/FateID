@@ -51,50 +51,45 @@ y <- intestine$y
 fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, adapt=TRUE, confidence=0.75, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
 
 ## -----------------------------------------------------------------------------
-dr  <- compdr(x, z=NULL, m=c("tsne","cmd","dm","lle","umap"), k=c(2,3), lle.n=30, dm.sigma="local", dm.distance="euclidean", tsne.perplexity=30, seed=12345)
+dr  <- compdr(x, z=NULL, m=c("tsne","cmd","umap"), k=2, lle.n=30, tsne.perplexity=30, seed=12345)
 
 ## -----------------------------------------------------------------------------
-plotFateMap(y,dr,k=2,m="tsne")
+plotFateMap(y,dr,k=2,m="umap")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  plotFateMap(y,dr,k=3,m="tsne")
+#  plotFateMap(y,dr,k=3,m="umap")
 
 ## -----------------------------------------------------------------------------
-plotFateMap(y,dr,k=2,m="tsne",fb=fb,g="t6")
+plotFateMap(y,dr,k=2,m="umap",fb=fb,g="t6")
 
 ## -----------------------------------------------------------------------------
-pr <- plotFateMap(y,dr,k=2,m="tsne",trthr=.33,fb=fb,prc=TRUE)
+pr <- plotFateMap(y,dr,k=2,m="umap",trthr=.33,fb=fb,prc=TRUE)
 
 ## -----------------------------------------------------------------------------
 v <- intestine$v
-pr <-plotFateMap(y, dr, k=2, m="tsne", g=c("Defa20__chr8", "Defa24__chr8"), n="Defa", x=v)
+pr <-plotFateMap(y, dr, k=2, m="umap", g=c("Defa20__chr8", "Defa24__chr8"), n="Defa", x=v)
 
 ## -----------------------------------------------------------------------------
-E <- plotFateMap(y,dr,k=2,m="tsne",g="E",fb=fb)
+E <- plotFateMap(y,dr,k=2,m="umap",g="E",fb=fb)
 head(E)
 
 ## -----------------------------------------------------------------------------
-pr  <- prcurve(y,fb,dr,k=2,m="tsne",trthr=0.4,start=3)
+pr  <- prcurve(y,fb,dr,k=2,m="umap",trthr=0.33,start=3)
 
 ## -----------------------------------------------------------------------------
 n <- pr$trc[["t6"]]
-
-## -----------------------------------------------------------------------------
-trc <- dptTraj(x,y,fb,trthr=.25,distance="euclidean",sigma=1000)
-#n   <- trc[["t6"]]
 
 ## -----------------------------------------------------------------------------
 v <- intestine$v
 fs  <- filterset(v,n=n,minexpr=2,minnumber=1)
 
 ## -----------------------------------------------------------------------------
-s1d <- getsom(fs,nb=1000,alpha=.5)
+s1d <- getsom(fs,nb=50,alpha=.5)
 
 ## -----------------------------------------------------------------------------
 ps  <- procsom(s1d,corthr=.85,minsom=3)
 
 ## -----------------------------------------------------------------------------
-set.seed(111111)
 fcol <- sample(rainbow(max(y)))
 
 ## -----------------------------------------------------------------------------
@@ -123,7 +118,7 @@ plotexpression(fs, y, g, n, col=fcol, name="Node 1", cluster=FALSE, types=sub("\
 
 ## -----------------------------------------------------------------------------
 group <- head(g,6)
-plotexpressionProfile(fs, y, g, n, name="Node 1", cluster=FALSE)
+plotexpressionProfile(fs, y, group, n, name="Node 1", cluster=FALSE)
 
 ## -----------------------------------------------------------------------------
 thr <- .5

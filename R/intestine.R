@@ -11,7 +11,7 @@
 #' }
 #'
 #' @return None
-#' @references Grün et al. (2013) Cell Stem Cell 19(2): 266-77
-#' (\href{https://www.ncbi.nlm.nih.gov/pubmed/27345837}{PubMed})
+#' @references Grün et al. (2016) Cell Stem Cell 19(2): 266-77
+#' (\href{https://pubmed.ncbi.nlm.nih.gov/27345837/}{PubMed})
 #'
 "intestine"

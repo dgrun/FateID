@@ -17,6 +17,7 @@ fateBias(
   use.dist = FALSE,
   seed = NULL,
   nbtree = NULL,
+  verbose = FALSE,
   ...
 )
 }
@@ -44,6 +45,8 @@ fateBias(
 \item{seed}{integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the radomness of the random forest algorithm. Default is \code{NULL}}
 
 \item{nbtree}{integer value. If given, it specifies the number of trees for each random forest explicitely. Default is \code{NULL}.}
+
+\item{verbose}{logical. If \code{TRUE}, then print information to console.}
 
 \item{...}{additional arguments to be passed to the low level function \code{randomForest}.}
 }
