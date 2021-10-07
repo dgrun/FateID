@@ -192,7 +192,7 @@ The principal curve can also be computed directly without calling the `plotFateM
 
 ```{r}
 pr  <- prcurve(y,fb,dr,k=2,m="umap",trthr=0.33,start=3)
-````
+```
 
 This function has the same input arguments as `plotFateMap` and is invoked by the `plotFateMap` function.
 
