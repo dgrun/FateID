@@ -51,7 +51,7 @@ y <- intestine$y
 fb  <- fateBias(x, y, tar, z=NULL, minnr=5, minnrh=10, adapt=TRUE, confidence=0.75, nbfactor=5, use.dist=FALSE, seed=12345, nbtree=NULL)
 
 ## -----------------------------------------------------------------------------
-dr  <- compdr(x, z=NULL, m=c("tsne","cmd","umap"), k=2, lle.n=30, tsne.perplexity=30, seed=12345)
+dr  <- compdr(x, z=NULL, m=c("tsne","cmd","umap"), k=2, tsne.perplexity=30, seed=12345)
 
 ## -----------------------------------------------------------------------------
 plotFateMap(y,dr,k=2,m="umap")

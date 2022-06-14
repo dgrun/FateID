@@ -41,7 +41,7 @@ plotFateMap(
 
 \item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Only \code{k=2} is allowed starting from version 0.1.9.}
 
-\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
+\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
 
 \item{kr}{integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.}
 
@@ -74,7 +74,7 @@ v <- intestine$v
 fcol <- intestine$fcol
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 
 # plot principal curves
 pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)

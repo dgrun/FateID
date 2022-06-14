@@ -125,7 +125,7 @@ Another important parameter controls which cells contribute to the training set 
 
 FateID also permits a dynamic test set size, where the `minnr` parameter is adapted separately for each target cluster based on the classification success in the previous iteration. If `adapt=TRUE`, the number of successfully classified cells is determined in each iteration, i.e. the number of cells with a minimum fraction of votes given by the `confidence` parameter for the target cluster, which gave rise to the inclusion of the cell in the test set. Weights are then derived by dividing this number by the maximum across all target clusters after adding a pseudocount of 1. The test set size `minnr` is rescaled for each cluster by the respective weight in the next iteration. 
 
-This leads to decreasing test set sizes, and hence, slower classification, if the previous classification success of the local neighbourhood has been low. Such an adaptive scheme is important if the number cells on different branches exhibits large differences. If classification on a short branch reaches the naïve compartment, where classification succes can be expected to decrease, the progression on this branch in future iterations slows down, while classification of more mature stages on a highly populated branch still progresses at full speed.
+This leads to decreasing test set sizes, and hence, slower classification, if the previous classification success of the local neighbourhood has been low. Such an adaptive scheme is important if the number cells on different branches exhibits large differences. If classification on a short branch reaches the na??ve compartment, where classification succes can be expected to decrease, the progression on this branch in future iterations slows down, while classification of more mature stages on a highly populated branch still progresses at full speed.
 
 As an alternative approach the FateID algorithm offers classification based on distances to all other cells. When `use.dist` is set to `TRUE`, then the distance matrix `z` (or `1-cor(x)`) is interpreted as feature matrix.
 The remaining arguments are control parameters of the random forests algorithm and usually do not have to be adjusted.
@@ -138,10 +138,10 @@ The fourth component is vector with all cell IDs ordered by random forest iterat
 Various dimensional reduction methods are commonly used for single cell transcriptome analysis in order to visually inspect the cell population structure. The FateID package computes a number of dimensional reduction representations to enable visualization of the fate bias and pseudo-temporal ordering by principal curve computation.
 
 ```{r}
-dr  <- compdr(x, z=NULL, m=c("tsne","cmd","umap"), k=2, lle.n=30, tsne.perplexity=30, seed=12345)
+dr  <- compdr(x, z=NULL, m=c("tsne","cmd","umap"), k=2, tsne.perplexity=30, seed=12345)
 ```
 
-The first two input parameters are the same as the ones to the `fateBias` function. The parameter `k` indicates the dimensions for which the dimensional reduction representations are computed. Typically, one wants to inspect data visually in two or three dimensions. However, it is possible to also compute dimensional reductions to more than three dimensions and inspecting the data after projecting onto a subset of dimensions. The remaining parameters are main control parameter for the various algorithms used for dimensional reduction. The function performs computation of a t-SNE map [@TSNE] using the `Rtsne` package, classical multi-dimensional scaling using `cmdscale` from the `stats` package, and locally linear embedding using the `lle` function from the `lle` package. Umaps are computed with the `umap` package. To speed up the computation, only a subset of dimensionality reduction representations can be selected as input parameter `m`.
+The first two input parameters are the same as the ones to the `fateBias` function. The parameter `k` indicates the dimensions for which the dimensional reduction representations are computed. Typically, one wants to inspect data visually in two or three dimensions. However, it is possible to also compute dimensional reductions to more than three dimensions and inspecting the data after projecting onto a subset of dimensions. The remaining parameters are main control parameter for the various algorithms used for dimensional reduction. The function performs computation of a t-SNE map [@TSNE] using the `Rtsne` package, and classical multi-dimensional scaling using `cmdscale` from the `stats` package. Umaps are computed with the `umap` package. To speed up the computation, only a subset of dimensionality reduction representations can be selected as input parameter `m`.
   
 All results can be plotted by the `plotFateMap` function.
 
@@ -378,7 +378,7 @@ references:
     given: J. S.
   - family: Sagar
     given:
-  - family: Grün
+  - family: Gr??n
     given: D.
   issued:
   - year: '2018'

@@ -15,7 +15,7 @@ prcurve(y, fb, dr, k = 2, m = "cmd", trthr = NULL, start = NULL, ...)
 
 \item{k}{integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.}
 
-\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
+\item{m}{name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.}
 
 \item{trthr}{real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the computation of the principal curve. If \code{NULL} then only cells with a significant bias >1 are included for each trajectory. The bias is computed as the ratio of the number of votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Default value is \code{NULL}.}
 
@@ -42,7 +42,7 @@ x <- intestine$x
 y <- intestine$y
 tar <- c(6,9,13)
 fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.25,start=NULL)
 
 }

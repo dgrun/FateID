@@ -7,9 +7,8 @@
 compdr(
   x,
   z = NULL,
-  m = c("tsne", "cmd", "lle", "umap"),
+  m = c("tsne", "cmd", "umap"),
   k = 2,
-  lle.n = 30,
   tsne.perplexity = 30,
   umap.pars = NULL,
   seed = 12345
@@ -20,11 +19,9 @@ compdr(
 
 \item{z}{Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}}
 
-\item{m}{a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.}
+\item{m}{a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.}
 
 \item{k}{vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{2}.}
-
-\item{lle.n}{integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.}
 
 \item{tsne.perplexity}{positive number. Perplexity used in the t-SNE computation. Default value is 30.}
 
@@ -34,7 +31,6 @@ compdr(
 }
 \value{
 A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
-  \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
   \item{umap}{umap computed by the \code{umap} function of the \pkg{umap} package.}
@@ -42,12 +38,12 @@ A two-dimensional list with the dimensional reduction representation stored as d
 Component names of the second dimension are a concatenation of a capital D and an integer number of the dimension. There is one component for each dimension in \code{k}.
 }
 \description{
-This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, diffusion maps, umap
+This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, diffusion maps, umap
 }
 \examples{
 
 x <- intestine$x
-dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 plot(dr[["cmd"]][["D2"]],pch=20,col="grey")
 
 }

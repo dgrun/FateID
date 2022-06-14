@@ -335,17 +335,15 @@ bias <- function(tvn){
 
 #' @title Computation of dimensional reduction representations
 #'
-#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, lle, diffusion maps, umap 
+#' @description This function computes dimensional reduction representations to a specified number of dimensions using a number of different algorithms: t-SNE, cmd, diffusion maps, umap 
 #' @param x expression data frame with genes as rows and cells as columns. Gene IDs should be given as row names and cell IDs should be given as column names. This can be a reduced expression table only including the features (genes) to be used in the analysis.
 #' @param z Matrix containing cell-to-cell distances to be used in the fate bias computation. Default is \code{NULL}. In this case, a correlation-based distance is computed from \code{x} by \code{1 - cor(x)}
-#' @param m a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{lle} (locally-linear embedding), \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.
+#' @param m a vector of dimensional reduction representations to be computed. The following representations can be computed: \code{cmd} (classical multidimensional scaling), \code{dm} (diffusion map), \code{tsne} (t-SNE map), \code{umap} (umap). The default value of m is \code{c("cmd","tsne","umap")}. Any subset of methods can be selected.
 #' @param k vector of integers representing the dimensions for which the dimensional reduction representations will be computed. Default value is \code{2}.
-#' @param lle.n integer number for the number of neighbours used in the \code{lle} algorithm. Default value is 30.
 #' @param tsne.perplexity positive number. Perplexity used in the t-SNE computation. Default value is 30.
 #' @param umap.pars umap parameters. See \pkg{umap} package, \code{umap.defaults}. Default is \code{NULL} and \code{umap.defaults} are used. \code{umap.pars$input} is automatically set to \code{"dist"}, since the umap is computed for the distance object.
 #' @param seed integer seed for initialization. If equal to \code{NULL} then each run will yield slightly different results due to the randomness of the random forest algorithm. Default is \code{NULL}
 #' @return A two-dimensional list with the dimensional reduction representation stored as data frames as components. Component names for the first dimension are given by one of the following algorithms:
-#'   \item{lle}{locally linear embedding calculated by the lle function from the \pkg{lle} package.}
 #'   \item{cmd}{classical multidimensional scaling computed by the \code{cmdscale} function of the \pkg{stats} package.}
 #'   \item{tsne}{t-SNE map computed by the \code{Rtsne} function of the \pkg{Rtsne} package.}
 #'   \item{umap}{umap computed by the \code{umap} function of the \pkg{umap} package.}
@@ -354,14 +352,13 @@ bias <- function(tvn){
 #' @examples
 #'
 #' x <- intestine$x
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' plot(dr[["cmd"]][["D2"]],pch=20,col="grey")
 #'
 #' @importFrom stats cor cmdscale as.dist
-#' @importFrom lle lle
 #' @importFrom Rtsne Rtsne
 #' @export
-compdr <- function(x,z=NULL,m=c("tsne","cmd","lle","umap"),k=2,lle.n=30,tsne.perplexity=30,umap.pars=NULL,seed=12345){
+compdr <- function(x,z=NULL,m=c("tsne","cmd","umap"),k=2,tsne.perplexity=30,umap.pars=NULL,seed=12345){
   if (!is.null(seed) ) set.seed(seed)
 
   dr <- list()
@@ -377,7 +374,6 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","lle","umap"),k=2,lle.n=30,tsne.per
   for ( j in m ) dr[[j]] <- list()
   for ( j in k){
     jn <- paste("D",j,sep="")
-    if ( "lle" %in% m ) dr[["lle"]][[jn]] <- as.data.frame(lle(d,m=j,k=lle.n)$Y)
     if ( "cmd" %in% m ) dr[["cmd"]][[jn]]  <- as.data.frame(cmdscale(di,k=j))
     if ( "tsne" %in% m ) dr[["tsne"]][[jn]] <- as.data.frame(Rtsne(as.dist(di),dims=j,initial_config=cmdscale(di,k=j),perplexity=tsne.perplexity)$Y)
     umap.pars$n_components <- j
@@ -394,7 +390,7 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","lle","umap"),k=2,lle.n=30,tsne.per
 #' @param fb fateBias object returned by the function \code{fateBias}.
 #' @param dr list of dimensional reduction representations returned by the function \code{compdr}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Default value is 2.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param trthr real value representing the threshold of the fraction of random forest votes required for the inclusion of a given cell for the computation of the principal curve. If \code{NULL} then only cells with a significant bias >1 are included for each trajectory. The bias is computed as the ratio of the number of votes for a trajectory and the number of votes for the trajectory with the second largest number of votes. By this means only the trajectory with the largest number of votes will receive a bias >1. The siginifcance is computed based on counting statistics on the difference in the number of votes. A significant bias requires a p-value < 0.05. Default value is \code{NULL}.
 #' @param start integer number representing a specified starting cluster number for all trajectories, i. e. a common progenitor cluster. The argument is optional. Default value is \code{NULL}.
 #' @param  ... additional arguments to be passed to the low level function \code{principal_curve}.
@@ -409,7 +405,7 @@ compdr <- function(x,z=NULL,m=c("tsne","cmd","lle","umap"),k=2,lle.n=30,tsne.per
 #' y <- intestine$y
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.25,start=NULL)
 #'
 #' @importFrom stats median
@@ -524,7 +520,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE,seed=12345)
 #' @param prc logical. If \code{TRUE}, then a principal curve is computed and returned. Default is \code{FALSE}.
 #' @param logsc logical. If \code{TRUE}, then gene expression of fate bias probabilities are plotted on a log2 scale. Default value is \code{FALSE}.
 #' @param k integer number for the dimension to be used. This dimension has to be present in \code{dr}. Only \code{k=2} is allowed starting from version 0.1.9.
-#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{lle}, \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
+#' @param m name of the dimensional reduction algorithms to be used for the principal curve computation. One of \code{cmd}, \code{dm}, \code{tsne}, \code{umap}. Default value is \code{cmd}. Has to be a component of \code{dr}, i.e. previously computed by \code{compdr}.
 #' @param kr integer vector. If \code{k}>3 then \code{kr} indicates the dimensions to be plotted (either two or three of all possible dimensions). Default value is \code{NULL}. In this case, \code{kr} is given by \code{1:min(k,3)}.
 #' @param col optional vector of valid color names for all clusters in \code{y} ordered by increasing cluster number. Default value is \code{NULL}.
 #' @param fb fateBias object returned by the function \code{fateBias}. If \code{fb} is provided, then a principal curve is computed and shown in the plot. Default value is \code{NULL}. The curve is only displayed if \code{g} equal \code{NULL}.
@@ -543,7 +539,7 @@ plot2dmap <-  function(d,x,y,g=NULL,n=NULL,col=NULL,tp=1,logsc=FALSE,seed=12345)
 #' fcol <- intestine$fcol
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #'
 #' # plot principal curves
 #' pr <- plotFateMap(y,dr,k=2,prc=TRUE,m="cmd",col=fcol,fb=fb,trthr=0.25,start=NULL,tp=.5)
@@ -865,7 +861,7 @@ filterset <- function(x,n=NULL,minexpr=2,minnumber=1){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -908,7 +904,7 @@ getsom <- function(x,nb=1000,alpha=.5){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -999,7 +995,7 @@ procsom <- function(s1d,corthr=.85,minsom=3){
 #' 
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1093,7 +1089,7 @@ plotheatmap <- function(x,xpart=NULL,xcol=NULL,xlab=TRUE,xgrid=FALSE,ypart=NULL,
 #' fcol <- intestine$col
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
@@ -1223,7 +1219,7 @@ plotexpression <- function (x, y, g, n, logsc = FALSE, col = NULL, name = NULL, 
 #' fcol <- intestine$col
 #' tar <- c(6,9,13)
 #' fb <- fateBias(x,y,tar,z=NULL,minnr=5,minnrh=10,nbfactor=5,use.dist=FALSE,seed=NULL,nbtree=NULL)
-#' dr <- compdr(x,z=NULL,m="cmd",k=2,lle.n=30,tsne.perplexity=30)
+#' dr <- compdr(x,z=NULL,m="cmd",k=2,tsne.perplexity=30)
 #' pr <- prcurve(y,fb,dr,k=2,m="cmd",trthr=0.4,start=NULL)
 #' n <- pr$trc[["t6"]]
 #' fs  <- filterset(v,n,minexpr=2,minnumber=1)
